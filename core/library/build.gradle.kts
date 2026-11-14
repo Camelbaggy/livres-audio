@@ -36,6 +36,8 @@ dependencies {
     implementation(project(":core:drive"))
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.okhttp)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
