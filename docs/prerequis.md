@@ -256,6 +256,21 @@ Ce que signifient ces trois autorisations :
 7. Laissez le reste par défaut (pas de « schéma d'URI personnalisé »). Cliquez sur **Créer / Create**.
 8. Une fenêtre affiche un « ID client » (`…apps.googleusercontent.com`). **Vous n'avez rien à en faire** : l'application est reconnue grâce au nom de paquet et à l'empreinte. Fermez la fenêtre.
 
+### Étape B6 bis — Compléter la page Branding
+
+Le bouton « Publier » de l'étape B7 reste grisé tant que la page **Branding** n'est pas complète. Google y exige une page d'accueil et des règles de confidentialité. Je les ai rédigées : elles sont publiées gratuitement par GitHub Pages.
+
+1. **Activer GitHub Pages (une seule fois)** : sur GitHub, ouvrez le dépôt → **Settings** → **Pages** (menu de gauche). Sous « Build and deployment », réglez **Source** sur **GitHub Actions**. Il n'y a rien d'autre à faire, l'enregistrement est automatique.
+2. Ouvrez l'onglet **Actions** du dépôt → workflow **« Site (pages d'accueil et de confidentialité) »** → **Run workflow** → **Run workflow**. Après 1 minute environ, la page <https://camelbaggy.github.io/livres-audio/> doit s'afficher.
+3. Dans la console Google : **Branding**, puis remplissez :
+   - **Logo** : **ne rien mettre**, car un logo déclenche une validation par Google ;
+   - **Page d'accueil de l'application / Application home page** : `https://camelbaggy.github.io/livres-audio/` ;
+   - **Lien vers les règles de confidentialité / Privacy policy link** : `https://camelbaggy.github.io/livres-audio/confidentialite.html` ;
+   - **Lien vers les conditions d'utilisation / Terms of service link** (s'il est demandé) : `https://camelbaggy.github.io/livres-audio/conditions.html` ;
+   - **Domaines autorisés / Authorized domains** : **Ajouter un domaine**, puis `camelbaggy.github.io` ;
+   - **Coordonnées du développeur** : votre adresse.
+4. **Enregistrer / Save**.
+
 ### Étape B7 — Publier l'application « en production » (important)
 
 Tant que l'application est « en test », Google déconnecte les comptes **tous les 7 jours**. C'est contraire à votre souhait de rester connecté durablement.
