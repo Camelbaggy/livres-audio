@@ -510,14 +510,14 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 
 | Lot | État | Notes |
 |---|---|---|
-| 0 Socle et essais | À faire | — |
+| 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 demandé (`docs/prerequis.md`) ; E1–E3 attendent les prérequis |
 | 1 Première version | À faire | — |
 | 2 Réseau | À faire | — |
 | 3 Informations | À faire | — |
 | 4 Usage à deux | À faire | — |
 | 5 Hors ligne et confort | À faire | — |
 | 6 Voiture et finitions | À faire | — |
-| T0 Banc d'essai TTS | À faire | — |
+| T0 Banc d'essai TTS | En cours | `tts bench` opérationnel (edge-tts, Piper, Kokoro en option) ; notation de l'utilisateur attendue |
 | T1–T4 | À faire | — |
 
 ### Points [À VÉRIFIER] — résultats
@@ -528,10 +528,13 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | E2 Lecture en flux + cache sur Drive | — | — |
 | E3 Chapitres intégrés M4B/MP3 | — | — |
 | Catalogue Audible France / Audnexus | — | — |
-| Veille voix de synthèse (modèles, tarifs) | — | — |
+| Veille voix de synthèse (modèles, tarifs) | Première passe dans `tts/docs/veille-voix.md` (sources secondaires, à recouper avant tout achat) | 2026-11-14 |
 
 ### Journal des décisions
 
 | Date | Décision | Motif |
 |---|---|---|
 | 2026-11-14 | Plan initial (D1–D12) | Établi à partir du cahier des charges |
+| 2026-11-14 | Versions figées au lot 0 : Gradle 9.9.1, AGP 9.5.1 (Kotlin intégré, pas de plugin `kotlin-android`), Kotlin 2.4.21, compileSdk/targetSdk 37 ; build en JDK 21, cible 17 | Dernières versions stables au 2026-11-14 |
+| 2026-11-14 | Environnement cloud « livres-audio » : accès `dl.google.com` (SDK), `speech.platform.bing.com` et Hugging Face (voix TTS) ; SDK installé par `scripts/install-android-sdk.sh` | Compiler et tester dans le cloud ; banc d'essai TTS |
+| 2026-11-14 | CLI TTS en `argparse` (pas de dépendance) ; moteurs lourds en extras `uv` optionnels | Installation de base légère |
