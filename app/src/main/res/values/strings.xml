@@ -1,4 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Livres audio</string>
+
+    <!-- Essai E1 (lot 0) -->
+    <string name="e1_title">Essai E1 : authentification Drive</string>
+    <string name="e1_intro">Écran temporaire de validation du lot 0. Il sera remplacé par l\'accueil au lot 1.</string>
+    <string name="e1_add_account">Ajouter un compte</string>
+    <string name="e1_role_dialog_title">Rôle du compte à ajouter</string>
+    <string name="e1_role_shared">Drive commun</string>
+    <string name="e1_role_personal">Mon Drive personnel</string>
+    <string name="e1_role_shared_short">commun</string>
+    <string name="e1_role_personal_short">personnel</string>
+    <string name="e1_profile_marker">compte de profil</string>
+    <string name="e1_no_account">Aucun compte connecté.</string>
+    <string name="e1_remove">Retirer</string>
+    <string name="e1_list_root">Lister la racine</string>
+    <string name="e1_silent_token">Jeton silencieux</string>
+    <string name="e1_write_appdata">Écrire appDataFolder</string>
+    <string name="e1_write_drive_file">Écrire drive.file</string>
+    <string name="e1_log_title">Journal d\'essai</string>
+    <string name="e1_log_empty">Aucune action pour le moment.</string>
+    <string name="e1_copy_log">Copier le journal</string>
+    <string name="e1_clear_log">Effacer</string>
+    <string name="e1_cancel">Annuler</string>
+    <string name="e1_busy">Opération en cours…</string>
 </resources>
