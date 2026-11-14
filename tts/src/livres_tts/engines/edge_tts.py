@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -50,7 +51,12 @@ class EdgeTtsEngine(Engine):
 
         async def _run(mp3: str) -> None:
             comm = edge_tts.Communicate(
-                text, voice, rate=params.get("rate", "+0%"), pitch=params.get("pitch", "+0Hz")
+                text,
+                voice,
+                rate=params.get("rate", "+0%"),
+                pitch=params.get("pitch", "+0Hz"),
+                # aiohttp n'utilise pas les variables de mandataire d'elles-mêmes.
+                proxy=os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy"),
             )
             await comm.save(mp3)
 

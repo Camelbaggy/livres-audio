@@ -78,7 +78,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     b = sub.add_parser("bench", help="comparer des voix à l'aveugle sur un extrait")
     b.add_argument("extrait", help="fichier texte de l'extrait")
-    b.add_argument("--moteurs", required=True, help="liste séparée par des virgules")
+    b.add_argument(
+        "--moteurs",
+        required=True,
+        help="liste séparée par des virgules ; « moteur:voix » pour choisir la voix",
+    )
     b.add_argument("--voix", help="moteur=voix,moteur2=voix2")
     b.add_argument("--sortie", help="dossier de sortie (défaut : bench-out/<date>)")
     b.add_argument("--autoriser-payant", action="store_true", help="accepter un moteur payant")

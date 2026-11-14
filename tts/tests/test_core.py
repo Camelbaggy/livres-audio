@@ -133,7 +133,7 @@ def test_bench_anonymises_and_writes_key(tmp_path):
     assert len(engines["a"].calls) > 1  # découpé selon max_chars
     key = json.loads((tmp_path / "cle.json").read_text("utf-8"))
     assert {v["moteur"] for v in key["voix"].values()} == {"a", "b", "c"}
-    assert "off" in key["ignores"] and "off" in res.skipped
+    assert "off:v0" in key["ignores"] and "off:v0" in res.skipped
     page = (tmp_path / "ecoute.html").read_text("utf-8")
     assert "voix-A.m4a" in page
     # la page ne révèle pas les moteurs
@@ -141,3 +141,18 @@ def test_bench_anonymises_and_writes_key(tmp_path):
     for name in ("a", "b", "c"):
         assert f">{name}<" not in page
     assert next(v for v in key["voix"].values() if v["moteur"] == "a")["voix"] == "vx"
+
+
+@needs_ffmpeg
+def test_bench_several_voices_of_one_engine(tmp_path):
+    engines = {"a": FakeEngine("a")}
+    bench_mod.run_bench(
+        "Une phrase.",
+        ["a:v1", "a:v2", "a"],
+        tmp_path,
+        seed=2,
+        engine_factory=factory(engines),
+    )
+    key = json.loads((tmp_path / "cle.json").read_text("utf-8"))
+    assert sorted(v["voix"] for v in key["voix"].values()) == ["v0", "v1", "v2"]
+    assert len(list(tmp_path.glob("voix-*.m4a"))) == 3

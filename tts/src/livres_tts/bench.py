@@ -75,22 +75,24 @@ def run_bench(
     log: Callable[[str], None] = lambda _m: None,
 ) -> BenchResult:
     voices = voices or {}
-    engines: list[Engine] = []
-    for name in engine_names:
+    engines: list[tuple[Engine, str | None]] = []
+    for spec in engine_names:
+        # « moteur:voix » permet de comparer plusieurs voix d'un même moteur.
+        name, _, explicit_voice = spec.partition(":")
         eng = engine_factory(name)
         if eng.is_paid and not allow_paid:
             raise PaidEngineRefused(
                 f"Le moteur {name} est payant : relancer avec --autoriser-payant "
                 "(après accord de l'utilisateur)."
             )
-        engines.append(eng)
+        engines.append((eng, explicit_voice or None))
 
     out_dir.mkdir(parents=True, exist_ok=True)
     result = BenchResult(out_dir=out_dir)
     produced: list[tuple[Engine, str, Path]] = []
     with tempfile.TemporaryDirectory() as tmp:
-        for eng in engines:
-            voice = voices.get(eng.name) or eng.default_voice
+        for eng, explicit_voice in engines:
+            voice = explicit_voice or voices.get(eng.name) or eng.default_voice
             try:
                 eng.check_available()
                 log(f"{eng.name} ({voice}) : synthèse…")
@@ -98,8 +100,8 @@ def run_bench(
                 workdir.mkdir()
                 produced.append((eng, voice, synthesize_text(eng, text, voice, workdir)))
             except EngineUnavailable as exc:
-                result.skipped[eng.name] = str(exc)
-                log(f"{eng.name} : ignoré — {exc}")
+                result.skipped[f"{eng.name}:{voice}"] = str(exc)
+                log(f"{eng.name} ({voice}) : ignoré — {exc}")
         order = list(range(len(produced)))
         random.Random(seed).shuffle(order)
         labels = anonymous_labels(len(produced))
