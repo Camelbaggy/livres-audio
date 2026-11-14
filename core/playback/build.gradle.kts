@@ -18,7 +18,10 @@ android {
     }
 
     testOptions {
-        unitTests.isReturnDefaultValues = true
+        unitTests {
+            isReturnDefaultValues = true
+            isIncludeAndroidResources = true
+        }
     }
 
     lint {
@@ -36,6 +39,7 @@ dependencies {
     api(libs.androidx.media3.exoplayer)
     api(libs.androidx.media3.datasource.okhttp)
     api(libs.androidx.media3.database)
+    api(libs.androidx.media3.session)
     api(libs.okhttp)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.core.ktx)
@@ -45,4 +49,7 @@ dependencies {
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }

@@ -11,16 +11,18 @@ import androidx.media3.extractor.DefaultExtractorsFactory
 import io.github.camelbaggy.livresaudio.core.model.DriveAuthProvider
 
 /**
- * Process-wide player and cache (singleton, see [PlaybackHiltModule]). [player] must be used from the main
- * thread. Temporary shape for trial E2; task 1.6 moves the player into a `MediaLibraryService`.
+ * Process-wide HTTP chain and cache (singleton, see [PlaybackHiltModule]); builds the players. A player must be
+ * used from the main thread.
  */
 @UnstableApi
 class PlaybackEngine(private val context: Context, auth: () -> DriveAuthProvider, val playbackCache: PlaybackCache) {
     private val httpClient = DriveDataSourceFactory.createHttpClient(auth)
 
-    val player: ExoPlayer by lazy { buildPlayer() }
+    /** Shared player of trial E2. The real service ([LivresAudioPlaybackService]) owns its own: [createPlayer]. */
+    val player: ExoPlayer by lazy { createPlayer() }
 
-    private fun buildPlayer(): ExoPlayer {
+    /** A new player on the shared cache and HTTP chain. The caller owns it (main thread) and must release it. */
+    fun createPlayer(): ExoPlayer {
         val dataSourceFactory = DriveDataSourceFactory.create(httpClient, playbackCache.cache)
         // Constant-bitrate seeking: MP3 files without a Xing/VBRI header would otherwise not be seekable.
         val extractors = DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true)
@@ -36,6 +38,9 @@ class PlaybackEngine(private val context: Context, auth: () -> DriveAuthProvider
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
+            // Defaults until the settings of task 1.8 (CLAUDE.md §5.3: 30 s forward, 10 s back).
+            .setSeekForwardIncrementMs(DEFAULT_SEEK_FORWARD_MS)
+            .setSeekBackIncrementMs(DEFAULT_SEEK_BACK_MS)
             .build()
     }
 
@@ -45,4 +50,9 @@ class PlaybackEngine(private val context: Context, auth: () -> DriveAuthProvider
         .setCustomCacheKey(DriveMediaUri.cacheKey(ref))
         .setMediaMetadata(androidx.media3.common.MediaMetadata.Builder().setTitle(title).build())
         .build()
+
+    companion object {
+        const val DEFAULT_SEEK_FORWARD_MS = 30_000L
+        const val DEFAULT_SEEK_BACK_MS = 10_000L
+    }
 }

@@ -91,6 +91,9 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.androidx.compiler)
 
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.junit)
