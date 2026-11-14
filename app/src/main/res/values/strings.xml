@@ -24,4 +24,34 @@
     <string name="e1_clear_log">Effacer</string>
     <string name="e1_cancel">Annuler</string>
     <string name="e1_busy">Opération en cours…</string>
+    <string name="e1_open_e2">Essai lecture (E2)</string>
+
+    <!-- Essai E2 (lot 0) -->
+    <string name="e2_title">Essai E2 : lecture depuis Drive</string>
+    <string name="e2_intro">Écran temporaire de validation du lot 0 : lecture en flux avec cache disque, déplacement dans le fichier, coupure réseau.</string>
+    <string name="e2_back">Retour à l\'essai E1</string>
+    <string name="e2_no_account">Aucun compte connecté : ajoutez-en un dans l\'essai E1.</string>
+    <string name="e2_account">Compte utilisé pour la lecture</string>
+    <string name="e2_search_hint">Début d\'un mot du nom du fichier</string>
+    <string name="e2_search">Chercher</string>
+    <string name="e2_no_results">Aucun fichier audio affiché. Laissez le champ vide pour tout lister (50 maximum).</string>
+    <string name="e2_status_playing">En lecture</string>
+    <string name="e2_status_paused">En pause</string>
+    <string name="e2_status_loading">Chargement…</string>
+    <string name="e2_status_waiting">En attente du réseau…</string>
+    <string name="e2_status_ended">Terminé</string>
+    <string name="e2_status_error">Erreur : %1$s</string>
+    <string name="e2_position">Position %1$s / %2$s</string>
+    <string name="e2_back_10">Recul 10 s</string>
+    <string name="e2_forward_30">Avance 30 s</string>
+    <string name="e2_play">Lecture</string>
+    <string name="e2_pause">Pause</string>
+    <string name="e2_speed">%1$s×</string>
+    <string name="e2_buffered">Position tamponnée : %1$s</string>
+    <string name="e2_ahead">Audio en mémoire d\'avance : %1$d s</string>
+    <string name="e2_cache_file">Cache disque pour ce fichier : %1$s sur %2$s</string>
+    <string name="e2_cache_total">Cache disque total : %1$s</string>
+    <string name="e2_network_on">Réseau : disponible</string>
+    <string name="e2_network_off">Réseau : indisponible</string>
+    <string name="e2_clear_cache">Vider le cache</string>
 </resources>

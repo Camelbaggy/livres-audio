@@ -510,7 +510,7 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 
 | Lot | État | Notes |
 |---|---|---|
-| 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 demandé (`docs/prerequis.md`) ; E1–E3 attendent les prérequis |
+| 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 en cours chez l'utilisateur (`docs/prerequis.md`) ; E1 codé (recette `docs/recettes/essai-e1.md` à faire sur téléphone) ; E3 codé ; E2 à faire |
 | 1 Première version | À faire | — |
 | 2 Réseau | À faire | — |
 | 3 Informations | À faire | — |
@@ -524,9 +524,9 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 
 | Point | Résultat | Date |
 |---|---|---|
-| E1 Authentification multi-comptes, durée, `drive.file` partagé | — | — |
+| E1 Authentification multi-comptes, durée, `drive.file` partagé | Code prêt : sélecteur système `AccountManager` puis `AuthorizationClient` ciblé par `setAccount` ; validation sur téléphone en attente | 2026-11-14 |
 | E2 Lecture en flux + cache sur Drive | — | — |
-| E3 Chapitres intégrés M4B/MP3 | — | — |
+| E3 Chapitres intégrés M4B/MP3 | Media3 lit `CHAP` (ID3) et la piste de chapitres QuickTime, **pas** l'atome Nero `chpl` → analyseur maison par plages d'octets dans `core/library/chapters` (testé sur fichiers ffmpeg ; reste à essayer sur de vrais M4B) | 2026-11-14 |
 | Catalogue Audible France / Audnexus | — | — |
 | Veille voix de synthèse (modèles, tarifs) | Première passe dans `tts/docs/veille-voix.md` (sources secondaires, à recouper avant tout achat) | 2026-11-14 |
 
@@ -537,4 +537,6 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | 2026-11-14 | Plan initial (D1–D12) | Établi à partir du cahier des charges |
 | 2026-11-14 | Versions figées au lot 0 : Gradle 9.9.1, AGP 9.5.1 (Kotlin intégré, pas de plugin `kotlin-android`), Kotlin 2.4.21, compileSdk/targetSdk 37 ; build en JDK 21, cible 17 | Dernières versions stables au 2026-11-14 |
 | 2026-11-14 | Environnement cloud « livres-audio » : accès `dl.google.com` (SDK), `speech.platform.bing.com` et Hugging Face (voix TTS) ; SDK installé par `scripts/install-android-sdk.sh` | Compiler et tester dans le cloud ; banc d'essai TTS |
+| 2026-11-14 | `runBlocking` toléré dans les deux intercepteurs OkHttp (jeton) : API synchrone, fils d'OkHttp uniquement | Seule façon d'appeler `getAccessToken` (suspend) depuis OkHttp |
+| 2026-11-14 | Écran de consentement : pages d'accueil et de confidentialité publiées par GitHub Pages depuis `site/` (domaine `camelbaggy.github.io`) | Exigées par Google pour publier « En production » |
 | 2026-11-14 | CLI TTS en `argparse` (pas de dépendance) ; moteurs lourds en extras `uv` optionnels | Installation de base légère |

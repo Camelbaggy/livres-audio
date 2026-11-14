@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 private val ButtonHeight = 48.dp
 
 @Composable
-fun E1Screen(viewModel: E1ViewModel, authUi: ActivityAuthUi, modifier: Modifier = Modifier) {
+fun E1Screen(viewModel: E1ViewModel, authUi: ActivityAuthUi, onOpenE2: () -> Unit, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var askRole by remember { mutableStateOf(false) }
     val clipboard = LocalClipboard.current
@@ -61,6 +61,10 @@ fun E1Screen(viewModel: E1ViewModel, authUi: ActivityAuthUi, modifier: Modifier 
                         enabled = !state.busy,
                         modifier = Modifier.fillMaxWidth().heightIn(min = ButtonHeight)
                     ) { Text(stringResource(R.string.e1_add_account)) }
+                    OutlinedButton(
+                        onClick = onOpenE2,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = ButtonHeight)
+                    ) { Text(stringResource(R.string.e1_open_e2)) }
                     if (state.busy) {
                         LinearProgressIndicator(Modifier.fillMaxWidth())
                         Text(stringResource(R.string.e1_busy), style = MaterialTheme.typography.bodySmall)
