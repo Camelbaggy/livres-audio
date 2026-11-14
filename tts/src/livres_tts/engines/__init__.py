@@ -15,11 +15,11 @@ _REGISTRY: dict[str, tuple[str, str]] = {
     "f5": ("livres_tts.engines.f5", "F5Engine"),
     "chatterbox": ("livres_tts.engines.chatterbox", "ChatterboxEngine"),
     "kyutai": ("livres_tts.engines.kyutai", "KyutaiEngine"),
-    # Moteurs payants : squelettes non fonctionnels (lot T3)
-    "openai": ("livres_tts.engines.paid_stubs", "OpenAiEngine"),
-    "google": ("livres_tts.engines.paid_stubs", "GoogleEngine"),
-    "azure": ("livres_tts.engines.paid_stubs", "AzureEngine"),
-    "elevenlabs": ("livres_tts.engines.paid_stubs", "ElevenLabsEngine"),
+    # Moteurs en ligne payants (palier gratuit utilisable pour le banc d'essai)
+    "google": ("livres_tts.engines.google", "GoogleEngine"),
+    "azure": ("livres_tts.engines.azure", "AzureEngine"),
+    "elevenlabs": ("livres_tts.engines.elevenlabs", "ElevenLabsEngine"),
+    "mistral": ("livres_tts.engines.mistral", "MistralEngine"),
 }
 
 

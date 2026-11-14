@@ -16,8 +16,20 @@ from .engines import Engine, EngineUnavailable, get_engine
 from .page import render_page
 from .textsplit import chunk_text
 
+DEFAULT_BUDGET_MAX = 0.50  # euros, pour l'ensemble du banc
+
 
 class PaidEngineRefused(Exception):
+    pass
+
+
+def estimate_cost(engine: Engine, text: str) -> tuple[int, float]:
+    """(caractères réellement envoyés, coût maximal en euros hors palier gratuit)."""
+    chars = sum(len(c) for c in chunk_text(text, engine.max_chars))
+    return chars, chars * engine.price_per_million_chars / 1_000_000
+
+
+class BudgetExceeded(PaidEngineRefused):
     pass
 
 
@@ -70,6 +82,7 @@ def run_bench(
     out_dir: Path,
     voices: dict[str, str] | None = None,
     allow_paid: bool = False,
+    budget_max: float = DEFAULT_BUDGET_MAX,
     seed: int | None = None,
     engine_factory: Callable[[str], Engine] = get_engine,
     log: Callable[[str], None] = lambda _m: None,
@@ -86,6 +99,22 @@ def run_bench(
                 "(après accord de l'utilisateur)."
             )
         engines.append((eng, explicit_voice or None))
+
+    # Garde-fou de coût : estimation affichée même si le palier gratuit devrait tout couvrir.
+    total = 0.0
+    for eng, _voice in engines:
+        if eng.is_paid:
+            chars, cost = estimate_cost(eng, text)
+            total += cost
+            log(
+                f"{eng.name} : {chars} caractères, coût maximal estimé {cost:.3f} €"
+                " (palier gratuit non déduit)"
+            )
+    if total > budget_max:
+        raise BudgetExceeded(
+            f"Coût maximal estimé du banc : {total:.2f} € > --budget-max {budget_max:.2f} €. "
+            "Retirer un moteur ou relever le plafond après accord de l'utilisateur."
+        )
 
     out_dir.mkdir(parents=True, exist_ok=True)
     result = BenchResult(out_dir=out_dir)

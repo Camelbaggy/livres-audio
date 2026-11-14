@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import __version__
-from .bench import PaidEngineRefused, parse_voices, run_bench
+from .bench import DEFAULT_BUDGET_MAX, PaidEngineRefused, parse_voices, run_bench
 from .engines import EngineUnavailable, engine_names, get_engine
 
 PENDING = {
@@ -40,6 +40,7 @@ def _bench(args: argparse.Namespace) -> int:
             out_dir,
             voices=parse_voices(args.voix),
             allow_paid=args.autoriser_payant,
+            budget_max=args.budget_max,
             seed=args.graine,
             log=lambda m: print(m, file=sys.stderr),
         )
@@ -86,6 +87,12 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--voix", help="moteur=voix,moteur2=voix2")
     b.add_argument("--sortie", help="dossier de sortie (défaut : bench-out/<date>)")
     b.add_argument("--autoriser-payant", action="store_true", help="accepter un moteur payant")
+    b.add_argument(
+        "--budget-max",
+        type=float,
+        default=DEFAULT_BUDGET_MAX,
+        help="plafond en euros du coût maximal estimé du banc (défaut 0,50)",
+    )
     b.add_argument("--graine", type=int, help="graine de l'ordre aléatoire (tests)")
     b.set_defaults(func=_bench)
 

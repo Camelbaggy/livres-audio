@@ -48,10 +48,10 @@ def factory(engines: dict[str, FakeEngine]):
 
 def test_registry_names_and_lazy_import():
     names = engine_names()
-    for n in ("edge_tts", "piper", "kokoro", "openai"):
+    for n in ("edge_tts", "piper", "kokoro", "google", "azure", "elevenlabs", "mistral"):
         assert n in names
     assert get_engine("piper").name == "piper"
-    assert get_engine("openai").is_paid
+    assert get_engine("google").is_paid
     with pytest.raises(KeyError):
         get_engine("inconnu")
 
@@ -100,7 +100,7 @@ def test_parse_voices():
 def test_cli_refuses_paid(tmp_path, capsys):
     (tmp_path / "x.txt").write_text("Bonjour.", "utf-8")
     code = main(
-        ["bench", str(tmp_path / "x.txt"), "--moteurs", "openai", "--sortie", str(tmp_path / "o")]
+        ["bench", str(tmp_path / "x.txt"), "--moteurs", "google", "--sortie", str(tmp_path / "o")]
     )
     assert code == 2
     assert "--autoriser-payant" in capsys.readouterr().err

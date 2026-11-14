@@ -2497,6 +2497,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "edge-tts" },
+    { name = "httpx" },
     { name = "piper-tts" },
 ]
 
@@ -2535,6 +2536,7 @@ requires-dist = [
     { name = "coqui-tts", marker = "extra == 'xtts'" },
     { name = "edge-tts", specifier = ">=7.0" },
     { name = "f5-tts", marker = "extra == 'f5'" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "kokoro", marker = "extra == 'kokoro'", specifier = ">=0.9" },
     { name = "moshi", marker = "extra == 'kyutai'" },
     { name = "piper-tts", specifier = ">=1.3" },
