@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-kokoro = ["kokoro>=0.9", "soundfile"]
+kokoro = ["kokoro>=0.9", "soundfile", "click"]  # click : requis par spacy, absent de ses dépendances résolues
 xtts = ["coqui-tts", "torch"]
 f5 = ["f5-tts"]
 chatterbox = ["chatterbox-tts"]
