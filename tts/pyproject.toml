@@ -1,0 +1,42 @@
+[project]
+name = "livres-tts"
+version = "0.1.0"
+description = "Atelier de synthèse vocale : EPUB sans DRM vers livre audio (usage privé)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "edge-tts>=7.0",
+    "piper-tts>=1.3",
+]
+
+[project.optional-dependencies]
+kokoro = ["kokoro>=0.9", "soundfile", "click"]  # click : requis par spacy, absent de ses dépendances résolues
+xtts = ["coqui-tts", "torch"]
+f5 = ["f5-tts"]
+chatterbox = ["chatterbox-tts"]
+kyutai = ["moshi", "torch", "soundfile"]
+
+[project.scripts]
+tts = "livres_tts.cli:entry"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/livres_tts"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
