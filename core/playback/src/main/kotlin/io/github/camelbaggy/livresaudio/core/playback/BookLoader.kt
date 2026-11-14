@@ -15,7 +15,11 @@ class LoadedBook(
     val book: PlaybackBook,
     val timeline: ChapterTimeline,
     val items: List<MediaItem>,
-    val target: RestoreTarget
+    val target: RestoreTarget,
+    /** `lastPlayedAt` of the saved progress: when the pause being ended began (null = never played). */
+    val lastPlayedAtMs: Long? = null,
+    /** The book's own speed, if the user set one (CLAUDE.md §5.3). */
+    val speedOverride: Float? = null
 )
 
 /** Loads a book from Room and decides the start position ([RestorePlanner]). */
@@ -27,8 +31,9 @@ class BookLoader @Inject constructor(private val library: LibraryRepository, pri
         val book = row.toPlaybackBook()
         if (book.files.isEmpty()) return null
         val timeline = ChapterTimeline(book.files, book.embeddedChapters)
-        val target = RestorePlanner.plan(progress.get(bookId), book, timeline)
-        return LoadedBook(book, timeline, BookPlaylist.build(book), target)
+        val saved = progress.get(bookId)
+        val target = RestorePlanner.plan(saved, book, timeline)
+        return LoadedBook(book, timeline, BookPlaylist.build(book), target, saved?.lastPlayedAt, saved?.speed)
     }
 
     /** Books being listened to, the most recently played first. */

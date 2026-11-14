@@ -126,4 +126,41 @@ class ChapterTimelineTest {
         val timeline = ChapterTimeline(book().files, listOf(BookChapter(0, "X", 9, 0, null)))
         assertEquals(3, timeline.chapters.size)
     }
+
+    // ---- offset (skips, rewind) ----
+
+    @Test
+    fun `offset inside a file`() {
+        assertEquals(FilePosition(1, 130_000), perFile.offset(1, 120_000, 10_000))
+        assertEquals(FilePosition(1, 110_000), perFile.offset(1, 120_000, -10_000))
+        assertEquals(FilePosition(1, 120_000), perFile.offset(1, 120_000, 0))
+    }
+
+    @Test
+    fun `offset crosses file boundaries both ways`() {
+        assertEquals(FilePosition(0, 595_000), perFile.offset(1, 5_000, -10_000))
+        assertEquals(FilePosition(0, 590_000), perFile.offset(1, 0, -10_000))
+        assertEquals(FilePosition(1, 5_000), perFile.offset(0, 595_000, 10_000))
+        assertEquals(FilePosition(2, 10_000), perFile.offset(0, 590_000, 620_000))
+        assertEquals(FilePosition(0, 100_000), perFile.offset(2, 100_000, -1_200_000))
+    }
+
+    @Test
+    fun `offset stops at the book's boundaries`() {
+        assertEquals(FilePosition(0, 0), perFile.offset(0, 5_000, -30_000))
+        assertEquals(FilePosition(0, 0), perFile.offset(2, 10_000, -9_999_999))
+        assertEquals(FilePosition(2, 600_000), perFile.offset(2, 595_000, 30_000))
+        assertEquals(FilePosition(2, 600_000), perFile.offset(0, 0, 99_999_999))
+    }
+
+    @Test
+    fun `offset with an unknown duration does not guess`() {
+        val files = listOf(file(0, durationMs = null), file(1), file(2, durationMs = null))
+        val unknown = ChapterTimeline(files, emptyList())
+        // Back across the unknown file 0: start of file 1.
+        assertEquals(FilePosition(1, 0), unknown.offset(1, 5_000, -10_000))
+        // Forward in an unknown-duration file: stays there, the player clamps.
+        assertEquals(FilePosition(0, 700_000), unknown.offset(0, 600_000, 100_000))
+        assertEquals(FilePosition(2, 40_000), unknown.offset(1, 590_000, 50_000))
+    }
 }

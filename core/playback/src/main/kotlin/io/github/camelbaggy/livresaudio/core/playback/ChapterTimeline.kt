@@ -84,6 +84,35 @@ class ChapterTimeline(private val files: List<PlaybackFile>, embedded: List<Book
         return null
     }
 
+    /**
+     * The position [deltaMs] away (negative = back) from [fileIndex]/[positionMs], crossing file boundaries
+     * (skips, rewind on resume: CLAUDE.md §5.3). Never before the start of the book; going forward it stops at the
+     * end of the last file. A file of unknown duration cannot be crossed precisely: backwards the result is the
+     * start of the file after it, forwards it stays in that file (the player clamps at the real end).
+     * Empty book: the position is returned shifted but not below 0.
+     */
+    fun offset(fileIndex: Int, positionMs: Long, deltaMs: Long): FilePosition {
+        if (files.isEmpty()) return FilePosition(fileIndex, (positionMs + deltaMs).coerceAtLeast(0))
+        var index = fileIndex.coerceIn(0, files.lastIndex)
+        var position = positionMs.coerceAtLeast(0) + deltaMs
+        if (deltaMs >= 0) {
+            while (true) {
+                val duration = files[index].durationMs ?: return FilePosition(index, position)
+                if (position < duration) return FilePosition(index, position)
+                if (index == files.lastIndex) return FilePosition(index, duration)
+                position -= duration
+                index++
+            }
+        }
+        while (position < 0) {
+            if (index == 0) return FilePosition(0, 0)
+            val previous = files[index - 1].durationMs ?: return FilePosition(index, 0)
+            index--
+            position += previous
+        }
+        return FilePosition(index, position)
+    }
+
     private fun TimelineChapter.start() = FilePosition(fileIndex, startMs)
 
     companion object {

@@ -12,6 +12,7 @@ import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
@@ -19,12 +20,15 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.camelbaggy.livresaudio.core.data.repo.ProgressRepository
+import io.github.camelbaggy.livresaudio.core.model.ListeningSettings
+import io.github.camelbaggy.livresaudio.core.model.ListeningSettingsStore
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -59,10 +63,22 @@ class LivresAudioPlaybackService : MediaLibraryService() {
     @Inject
     lateinit var progress: ProgressRepository
 
+    @Inject
+    lateinit var settingsStore: ListeningSettingsStore
+
     private lateinit var scope: CoroutineScope
     private var exoPlayer: ExoPlayer? = null
     private var session: MediaLibrarySession? = null
     private var keeper: PositionKeeper? = null
+    private var rewindPlayer: ResumeRewindPlayer? = null
+    private var speedSaver: SpeedOverrideSaver? = null
+
+    /** Live listening settings (player thread), read by the players and the speed logic. */
+    private var settings: ListeningSettings = ListeningSettings()
+
+    /** Speed override of the loaded book (null = follows the profile's default), and the book it belongs to. */
+    private var speedOverride: Float? = null
+    private var speedBookId: String? = null
 
     @Volatile
     private var timeline: ChapterTimeline? = null
@@ -99,7 +115,17 @@ class LivresAudioPlaybackService : MediaLibraryService() {
         val player = engine.createPlayer()
         player.addListener(playerListener)
         exoPlayer = player
-        val chapterPlayer = ChapterPlayer(player) { timeline }
+        speedSaver = SpeedOverrideSaver(progress, scope, writeDispatcher, System::currentTimeMillis)
+        // Stack: ExoPlayer <- rewind on resume <- chapters/skips/headset buttons (what the session exposes).
+        val rewinding = ResumeRewindPlayer(player, timeline = { timeline }, settings = { settings })
+        rewindPlayer = rewinding
+        val chapterPlayer = ChapterPlayer(rewinding, timeline = { timeline }, settings = { settings })
+        scope.launch {
+            settingsStore.settings.collect {
+                settings = it
+                applySpeed()
+            }
+        }
         session = MediaLibrarySession.Builder(this, chapterPlayer, LibraryCallback())
             .setSessionActivity(launchIntent())
             .build()
@@ -120,6 +146,10 @@ class LivresAudioPlaybackService : MediaLibraryService() {
         scope.cancel()
         session?.release()
         session = null
+        rewindPlayer?.detach()
+        rewindPlayer = null
+        speedSaver?.cancel()
+        speedSaver = null
         exoPlayer?.run {
             removeListener(playerListener)
             release()
@@ -147,6 +177,8 @@ class LivresAudioPlaybackService : MediaLibraryService() {
     private suspend fun startBook(bookId: String): MediaSession.MediaItemsWithStartPosition {
         val loaded = loader.load(bookId) ?: throw IllegalStateException("Livre introuvable : $bookId")
         val player = checkNotNull(exoPlayer) { "Service arrêté" }
+        // Fresh settings before the first play: the rewind and the speed must use what the user just set.
+        settings = settingsStore.settings.first()
         keeper?.finish()
         keeper = null
         val newKeeper = PositionKeeper(
@@ -162,7 +194,35 @@ class LivresAudioPlaybackService : MediaLibraryService() {
         keeper = newKeeper
         timeline = loaded.timeline
         activeBook.set(ActiveBook(loaded.book, loaded.timeline))
+        speedBookId = loaded.book.bookId
+        speedOverride = loaded.speedOverride
+        applySpeed()
+        // The pause being ended began at the book's last listening (also valid after more than 24 h).
+        rewindPlayer?.tracker?.arm(loaded.lastPlayedAtMs)
         return MediaSession.MediaItemsWithStartPosition(loaded.items, loaded.target.fileIndex, loaded.target.positionMs)
+    }
+
+    /** Applies the loaded book's override, else the default speed, to the player (pitch untouched). */
+    private fun applySpeed() {
+        val player = exoPlayer ?: return
+        val speed = PlaybackSpeed.effective(speedOverride, settings.defaultSpeed)
+        if (player.playbackParameters.speed != speed || player.playbackParameters.pitch != 1f) {
+            player.playbackParameters = PlaybackSpeed.parameters(speed)
+        }
+    }
+
+    private fun setBookSpeed(speed: Float) {
+        val bookId = speedBookId ?: return
+        speedOverride = PlaybackSpeed.normalize(speed)
+        applySpeed()
+        speedSaver?.save(bookId, speedOverride)
+    }
+
+    private fun clearBookSpeed() {
+        val bookId = speedBookId ?: return
+        speedOverride = null
+        applySpeed()
+        speedSaver?.save(bookId, null)
     }
 
     private fun resetPosition() {
@@ -193,6 +253,8 @@ class LivresAudioPlaybackService : MediaLibraryService() {
         ): MediaSession.ConnectionResult {
             val commands = MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
                 .add(RESET_POSITION_COMMAND)
+                .add(PlaybackCommands.setSpeed)
+                .add(PlaybackCommands.clearSpeedOverride)
                 .build()
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                 .setAvailableSessionCommands(commands)
@@ -210,6 +272,20 @@ class LivresAudioPlaybackService : MediaLibraryService() {
                 return Futures.immediateFuture(
                     SessionResult(SessionResult.RESULT_SUCCESS)
                 )
+            }
+            when (customCommand.customAction) {
+                PlaybackCommands.SET_SPEED -> {
+                    if (!args.containsKey(PlaybackCommands.ARG_SPEED)) {
+                        return Futures.immediateFuture(SessionResult(SessionError.ERROR_BAD_VALUE))
+                    }
+                    setBookSpeed(args.getFloat(PlaybackCommands.ARG_SPEED))
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+
+                PlaybackCommands.CLEAR_SPEED_OVERRIDE -> {
+                    clearBookSpeed()
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
             }
             return super.onCustomCommand(session, controller, customCommand, args)
         }

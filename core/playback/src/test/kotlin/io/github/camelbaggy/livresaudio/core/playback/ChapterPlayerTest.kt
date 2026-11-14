@@ -6,6 +6,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.test.core.app.ApplicationProvider
+import io.github.camelbaggy.livresaudio.core.model.ListeningSettings
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -32,9 +33,9 @@ class ChapterPlayerTest {
     }
 
     @Test
-    fun `next and previous move by chapter`() {
+    fun `next and previous move by chapter when headset buttons are chapters`() {
         val exo = player()
-        val chapterPlayer = ChapterPlayer(exo) { timeline }
+        val chapterPlayer = ChapterPlayer(exo, { timeline }, { ListeningSettings(headsetButtonsAsChapters = true) })
         exo.seekTo(1, 50_000)
         chapterPlayer.seekToNext()
         assertEquals(1, exo.currentMediaItemIndex)
@@ -59,7 +60,7 @@ class ChapterPlayerTest {
     fun `next and previous commands are always available once a book is loaded`() {
         val exo = player()
         var current: ChapterTimeline? = null
-        val chapterPlayer = ChapterPlayer(exo) { current }
+        val chapterPlayer = ChapterPlayer(exo, { current })
         current = timeline
         exo.seekTo(2, 0)
         assertTrue(chapterPlayer.isCommandAvailable(Player.COMMAND_SEEK_TO_NEXT))
@@ -89,5 +90,53 @@ class ChapterPlayerTest {
         assertEquals(DiscontinuityKind.SEEK, discontinuityKindOf(Player.DISCONTINUITY_REASON_SEEK))
         assertEquals(DiscontinuityKind.OTHER, discontinuityKindOf(Player.DISCONTINUITY_REASON_AUTO_TRANSITION))
         assertEquals(DiscontinuityKind.OTHER, discontinuityKindOf(Player.DISCONTINUITY_REASON_REMOVE))
+    }
+
+    @Test
+    fun `media item next and previous are chapters whatever the setting, seekToNext follows the setting`() {
+        val exo = player()
+        val chapterPlayer = ChapterPlayer(exo, { timeline }, { ListeningSettings(headsetButtonsAsChapters = false) })
+        exo.seekTo(1, 50_000)
+        chapterPlayer.seekToNextMediaItem()
+        assertEquals(1, exo.currentMediaItemIndex)
+        assertEquals(200_000L, exo.currentPosition)
+        chapterPlayer.seekToPreviousMediaItem() // > 3 s into chapter B? no: at its start -> chapter A
+        assertEquals(0L, exo.currentPosition)
+        // Skips mode: the media buttons skip by the configured durations.
+        exo.seekTo(1, 100_000)
+        chapterPlayer.seekToNext()
+        assertEquals(130_000L, exo.currentPosition)
+        chapterPlayer.seekToPrevious()
+        assertEquals(120_000L, exo.currentPosition)
+        exo.release()
+    }
+
+    @Test
+    fun `skips use the live settings and cross file boundaries`() {
+        val exo = player()
+        var settings = ListeningSettings(skipForwardMs = 45_000, skipBackMs = 15_000)
+        val chapterPlayer = ChapterPlayer(exo, { timeline }, { settings })
+        assertEquals(45_000L, chapterPlayer.seekForwardIncrement)
+        assertEquals(15_000L, chapterPlayer.seekBackIncrement)
+
+        exo.seekTo(0, 570_000)
+        chapterPlayer.seekForward() // 45 s: 30 s left in file 0, 15 s into file 1
+        assertEquals(1, exo.currentMediaItemIndex)
+        assertEquals(15_000L, exo.currentPosition)
+        chapterPlayer.seekBack() // back to 0 s
+        assertEquals(0L, exo.currentPosition)
+        chapterPlayer.seekBack() // 15 s before file 1: end of file 0 minus 15 s
+        assertEquals(0, exo.currentMediaItemIndex)
+        assertEquals(585_000L, exo.currentPosition)
+
+        settings = settings.copy(skipBackMs = 5_000, skipForwardMs = 60_000) // a change applies at once
+        assertEquals(60_000L, chapterPlayer.seekForwardIncrement)
+        chapterPlayer.seekBack()
+        assertEquals(580_000L, exo.currentPosition)
+        exo.seekTo(0, 3_000)
+        chapterPlayer.seekBack() // never before the start of the book
+        assertEquals(0L, exo.currentPosition)
+        assertEquals(0, exo.currentMediaItemIndex)
+        exo.release()
     }
 }
