@@ -106,10 +106,10 @@ Copiez le fichier `livres-audio.jks` à **deux** endroits sûrs, en dehors de l'
 Toujours dans le même dossier, tapez :
 
 ```
-keytool -list -v -keystore livres-audio.jks -alias livres-audio
+keytool "-J-Duser.language=en" -list -v -keystore livres-audio.jks -alias livres-audio
 ```
 
-Entrez le mot de passe. Dans le texte qui s'affiche, cherchez la ligne qui commence par **`SHA1:`**. Elle ressemble à ceci (vos chiffres seront différents) :
+Les guillemets autour de `"-J-Duser.language=en"` sont indispensables sous PowerShell, qui sinon coupe l'option au point. Entrez le mot de passe. L'option `-J-Duser.language=en` affiche le résultat en anglais. Elle contourne un bogue de `keytool` en français, qui s'arrête sur `MissingFormatArgumentException: Format specifier '%2$s'` avant d'afficher l'empreinte. Dans le texte qui s'affiche, cherchez la ligne qui commence par **`SHA1:`**. Elle ressemble à ceci (vos chiffres seront différents) :
 
 ```
 SHA1: 3A:7F:0C:91:...:E4:22
@@ -255,6 +255,21 @@ Ce que signifient ces trois autorisations :
 6. **Empreinte du certificat SHA-1 / SHA-1 certificate fingerprint** : collez l'empreinte relevée à l'étape A5, au format `3A:7F:0C:…` avec les deux-points.
 7. Laissez le reste par défaut (pas de « schéma d'URI personnalisé »). Cliquez sur **Créer / Create**.
 8. Une fenêtre affiche un « ID client » (`…apps.googleusercontent.com`). **Vous n'avez rien à en faire** : l'application est reconnue grâce au nom de paquet et à l'empreinte. Fermez la fenêtre.
+
+### Étape B6 bis — Compléter la page Branding
+
+Le bouton « Publier » de l'étape B7 reste grisé tant que la page **Branding** n'est pas complète. Google y exige une page d'accueil et des règles de confidentialité. Je les ai rédigées : elles sont publiées gratuitement par GitHub Pages.
+
+1. **Activer GitHub Pages (une seule fois)** : sur GitHub, ouvrez le dépôt → **Settings** → **Pages** (menu de gauche). Sous « Build and deployment », réglez **Source** sur **GitHub Actions**. Il n'y a rien d'autre à faire, l'enregistrement est automatique.
+2. Ouvrez l'onglet **Actions** du dépôt → workflow **« Site (pages d'accueil et de confidentialité) »** → **Run workflow** → **Run workflow**. Après 1 minute environ, la page <https://camelbaggy.github.io/livres-audio/> doit s'afficher.
+3. Dans la console Google : **Branding**, puis remplissez :
+   - **Logo** : **ne rien mettre**, car un logo déclenche une validation par Google ;
+   - **Page d'accueil de l'application / Application home page** : `https://camelbaggy.github.io/livres-audio/` ;
+   - **Lien vers les règles de confidentialité / Privacy policy link** : `https://camelbaggy.github.io/livres-audio/confidentialite.html` ;
+   - **Lien vers les conditions d'utilisation / Terms of service link** (s'il est demandé) : `https://camelbaggy.github.io/livres-audio/conditions.html` ;
+   - **Domaines autorisés / Authorized domains** : **Ajouter un domaine**, puis `camelbaggy.github.io` ;
+   - **Coordonnées du développeur** : votre adresse.
+4. **Enregistrer / Save**.
 
 ### Étape B7 — Publier l'application « en production » (important)
 

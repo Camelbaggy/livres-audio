@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confidentialité — Livres audio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Règles de confidentialité</h1>
+<p class="sub">Application « Livres audio » pour Android — en vigueur le 14 novembre 2026</p>
+
+<p>Livres audio est une application privée utilisée par deux personnes d'un même foyer. Elle n'est pas
+distribuée au public. Ces règles décrivent précisément ce qu'elle fait des données.</p>
+
+<h2>Données Google auxquelles l'application accède</h2>
+<p>Avec votre accord explicite, donné sur l'écran de consentement de Google, l'application demande
+trois autorisations sur votre compte Google Drive :</p>
+<ul>
+<li><strong>Lecture seule de Drive</strong> (<code>drive.readonly</code>) : lister les dossiers que vous désignez
+comme contenant des livres audio, lire les noms, tailles et sommes de contrôle des fichiers, et lire
+les fichiers audio et images pour les écouter et afficher les couvertures. L'application ne peut ni
+modifier ni supprimer vos fichiers.</li>
+<li><strong>Dossier de l'application</strong> (<code>drive.appdata</code>) : enregistrer dans un dossier caché de
+votre propre Drive, réservé à l'application, vos positions d'écoute, marque-pages et réglages, afin de
+les retrouver après un changement de téléphone.</li>
+<li><strong>Fichiers créés par l'application</strong> (<code>drive.file</code>) : créer et mettre à jour un dossier
+<code>.livres-audio</code> dans le Drive commun du foyer (informations corrigées des livres, couvertures choisies).
+Cette autorisation ne donne accès qu'aux fichiers créés par l'application elle-même.</li>
+</ul>
+<p>L'application lit aussi l'adresse et le nom de votre compte Google, pour afficher quel compte est connecté.</p>
+
+<h2>Où vont ces données</h2>
+<ul>
+<li>Les données restent <strong>sur votre téléphone</strong> et <strong>dans vos comptes Google Drive</strong>. Il n'existe aucun
+serveur de l'application : son auteur ne reçoit, ne stocke et ne voit aucune de vos données.</li>
+<li>Pour retrouver la couverture et les informations d'un livre, l'application peut envoyer
+<strong>uniquement le titre et l'auteur</strong> du livre à des catalogues publics de livres (catalogue Audible,
+iTunes Search d'Apple, Google Books). Aucune autre donnée, ni aucun identifiant de compte, ne leur est envoyé.</li>
+<li>Aucune publicité, aucun outil de mesure d'audience, aucun rapport de plantage envoyé à un tiers.</li>
+<li>Les données Google ne sont jamais vendues, ni transférées à des tiers, ni utilisées pour entraîner
+des modèles d'intelligence artificielle.</li>
+</ul>
+
+<h2>Utilisation limitée</h2>
+<p>L'utilisation et le transfert par l'application des informations reçues des API Google respectent les
+<a href="https://developers.google.com/terms/api-services-user-data-policy">règles relatives aux données
+utilisateur des services d'API Google</a>, y compris les exigences d'utilisation limitée (« Limited Use »).</p>
+
+<h2>Sécurité et conservation</h2>
+<ul>
+<li>Les jetons d'accès Google sont gérés par les services Google du téléphone ; l'application ne les
+enregistre jamais dans ses fichiers ni dans Drive.</li>
+<li>Les données locales (bibliothèque, positions, cache audio) restent dans le stockage privé de
+l'application et sont effacées à sa désinstallation.</li>
+<li>Les données enregistrées dans Drive y restent tant que vous ne les supprimez pas. Vous pouvez les supprimer
+à tout moment : le dossier <code>.livres-audio</code> depuis Google Drive, et les données cachées depuis
+Google Drive → Paramètres → Gérer les applications → Livres audio → Supprimer les données d'application cachées.</li>
+</ul>
+
+<h2>Révoquer l'accès</h2>
+<p>Vous pouvez retirer l'accès de l'application à tout moment sur
+<a href="https://myaccount.google.com/connections">myaccount.google.com/connections</a>.</p>
+
+<h2>Contact</h2>
+<p>Pour toute question : <a href="https://github.com/Camelbaggy/livres-audio/issues">ouvrir une demande sur le dépôt du projet</a>.</p>
+
+<footer><a href="index.html">Accueil</a> · <a href="conditions.html">Conditions d'utilisation</a></footer>
+</body>
+</html>
