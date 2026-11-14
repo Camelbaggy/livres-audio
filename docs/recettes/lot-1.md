@@ -85,6 +85,15 @@ Notez pour chaque point : ✅ conforme, ⚠️ conforme avec une remarque, ou �
 | 7.4 | Sur une fiche, faites **Remettre à zéro**. | Une confirmation est demandée. Après validation, le livre repart du début. |
 | 7.5 | Sur une fiche, faites **Marquer comme terminé**. | Le livre apparaît comme terminé (barre pleine). |
 
+## 7 bis. Comptes et dossiers
+
+| # | À faire | Résultat attendu |
+|---|---|---|
+| 7b.1 | **⋮ → Réglages → Comptes et dossiers**. | Vos deux comptes, leur rôle et leurs dossiers sont listés. |
+| 7b.2 | Appuyez sur **Reconnecter** pour le compte commun. | L'écran de consentement Google s'affiche pour **ce** compte ; aucune nouvelle ligne de compte n'est créée. |
+| 7b.3 | Ajoutez puis retirez un dossier de test. | Le dossier apparaît puis disparaît ; ses livres disparaissent de la bibliothèque, les autres restent. |
+| 7b.4 | Regardez un livre dont le dossier contient une image `cover.jpg` (sans couverture intégrée). | Sa couverture s'affiche. |
+
 ## 8. Le lendemain
 
 | # | À faire | Résultat attendu |
@@ -97,7 +106,6 @@ Notez pour chaque point : ✅ conforme, ⚠️ conforme avec une remarque, ou �
 ## Ce que je sais déjà ne pas être fait (inutile de le signaler)
 
 - Pas encore de reprise **automatique** après une longue coupure réseau, ni de pré-chargement poussé (lot 2).
-- Les couvertures `cover.jpg` posées dans les dossiers ne sont pas encore affichées. Seules les couvertures intégrées aux fichiers le sont.
 - Pas encore de marque-pages, de minuterie ni de téléchargement hors ligne (lot 5).
 - Pas d'informations en ligne (résumés, couvertures HD) : c'est le lot 3.
 - Pas encore de synchronisation entre les deux téléphones (lot 4).

@@ -511,7 +511,7 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | Lot | État | Notes |
 |---|---|---|
 | 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 en cours chez l'utilisateur (`docs/prerequis.md`) ; E1, E2, E3 codés ; recettes `docs/recettes/essai-e1.md` et `essai-e2.md` à faire sur téléphone |
-| 1 Première version | En cours | Code des tâches 1.1, 1.3–1.10 fait (bibliothèque, fiche, lecteur, réglages, retour arrière, vitesse, sondage). Reste : 1.2 (unifier comptes DataStore/Room), couverture d'image de dossier non enregistrée, recette `docs/recettes/lot-1.md` sur téléphone |
+| 1 Première version | Code terminé | Tâches 1.1 à 1.10 faites et fusionnées (PR 6–9). En attente : recette `docs/recettes/lot-1.md` sur téléphone |
 | 2 Réseau | À faire | — |
 | 3 Informations | À faire | — |
 | 4 Usage à deux | À faire | — |
