@@ -510,7 +510,7 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 
 | Lot | État | Notes |
 |---|---|---|
-| 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 en cours chez l'utilisateur (`docs/prerequis.md`) ; E1 codé (recette `docs/recettes/essai-e1.md` à faire sur téléphone) ; E3 codé ; E2 à faire |
+| 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 en cours chez l'utilisateur (`docs/prerequis.md`) ; E1, E2, E3 codés ; recettes `docs/recettes/essai-e1.md` et `essai-e2.md` à faire sur téléphone |
 | 1 Première version | À faire | — |
 | 2 Réseau | À faire | — |
 | 3 Informations | À faire | — |
@@ -525,7 +525,7 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | Point | Résultat | Date |
 |---|---|---|
 | E1 Authentification multi-comptes, durée, `drive.file` partagé | Code prêt : sélecteur système `AccountManager` puis `AuthorizationClient` ciblé par `setAccount` ; validation sur téléphone en attente | 2026-11-14 |
-| E2 Lecture en flux + cache sur Drive | — | — |
+| E2 Lecture en flux + cache sur Drive | Code prêt : `CacheDataSource` → `ResolvingDataSource` (compte porté par un en-tête interne retiré avant envoi) → OkHttp authentifié ; validation sur téléphone en attente | 2026-11-14 |
 | E3 Chapitres intégrés M4B/MP3 | Media3 lit `CHAP` (ID3) et la piste de chapitres QuickTime, **pas** l'atome Nero `chpl` → analyseur maison par plages d'octets dans `core/library/chapters` (testé sur fichiers ffmpeg ; reste à essayer sur de vrais M4B) | 2026-11-14 |
 | Catalogue Audible France / Audnexus | — | — |
 | Veille voix de synthèse (modèles, tarifs) | Première passe dans `tts/docs/veille-voix.md` (sources secondaires, à recouper avant tout achat) | 2026-11-14 |
