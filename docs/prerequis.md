@@ -106,10 +106,10 @@ Copiez le fichier `livres-audio.jks` à **deux** endroits sûrs, en dehors de l'
 Toujours dans le même dossier, tapez :
 
 ```
-keytool -J-Duser.language=en -list -v -keystore livres-audio.jks -alias livres-audio
+keytool "-J-Duser.language=en" -list -v -keystore livres-audio.jks -alias livres-audio
 ```
 
-Entrez le mot de passe. L'option `-J-Duser.language=en` affiche le résultat en anglais. Elle contourne un bogue de `keytool` en français, qui s'arrête sur `MissingFormatArgumentException: Format specifier '%2$s'` avant d'afficher l'empreinte. Dans le texte qui s'affiche, cherchez la ligne qui commence par **`SHA1:`**. Elle ressemble à ceci (vos chiffres seront différents) :
+Les guillemets autour de `"-J-Duser.language=en"` sont indispensables sous PowerShell, qui sinon coupe l'option au point. Entrez le mot de passe. L'option `-J-Duser.language=en` affiche le résultat en anglais. Elle contourne un bogue de `keytool` en français, qui s'arrête sur `MissingFormatArgumentException: Format specifier '%2$s'` avant d'afficher l'empreinte. Dans le texte qui s'affiche, cherchez la ligne qui commence par **`SHA1:`**. Elle ressemble à ceci (vos chiffres seront différents) :
 
 ```
 SHA1: 3A:7F:0C:91:...:E4:22
