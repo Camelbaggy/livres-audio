@@ -101,6 +101,24 @@
     <string name="summary_finish">Terminer</string>
     <string name="summary_need_root">Choisissez au moins un dossier de livres pour terminer.</string>
 
+    <!-- Comptes et dossiers (réglages) -->
+    <string name="accounts_title">Comptes et dossiers</string>
+    <string name="accounts_none">Aucun compte connecté.</string>
+    <string name="accounts_role_shared">Drive commun</string>
+    <string name="accounts_role_personal">Drive personnel</string>
+    <string name="accounts_profile">Compte de profil : positions, marque-pages et réglages y sont sauvegardés</string>
+    <string name="accounts_add_folder">Ajouter un dossier de livres</string>
+    <string name="accounts_reconnect">Reconnecter ce compte</string>
+    <string name="accounts_reconnected">Compte %1$s reconnecté.</string>
+    <string name="accounts_dismiss">Fermer</string>
+    <string name="accounts_chooser_done">Terminer</string>
+    <string name="accounts_remove">Retirer ce compte</string>
+    <string name="accounts_remove_title">Retirer %1$s ?</string>
+    <string name="accounts_remove_text">Les dossiers de ce compte ne seront plus surveillés et ses livres disparaissent de la bibliothèque (ils sont mis de côté 90 jours, puis oubliés). Vos positions d\'écoute et vos marque-pages sont conservés. Rien n\'est supprimé dans Google Drive. Vous pourrez reconnecter le compte plus tard.</string>
+    <string name="accounts_remove_confirm">Retirer le compte</string>
+    <string name="accounts_remove_cancel">Annuler</string>
+    <string name="settings_accounts">Comptes et dossiers</string>
+
     <!-- Navigation, bibliothèque provisoire, diagnostic -->
     <string name="library_title">Bibliothèque</string>
     <string name="library_edit_setup">Comptes et dossiers</string>

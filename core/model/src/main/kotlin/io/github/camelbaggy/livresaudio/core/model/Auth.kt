@@ -48,6 +48,12 @@ interface DriveAuthProvider {
     /** Interactive: forced account chooser, consent for the D7 scopes, then `about.get`. */
     suspend fun addAccount(ui: AuthUi, role: AccountRole): AuthResult<ConnectedAccount>
 
+    /**
+     * Interactive: redoes the consent for the SAME already connected account (no account chooser, role and
+     * [AccountId] unchanged). Fails if Google answers for another address.
+     */
+    suspend fun reconnectAccount(ui: AuthUi, accountId: AccountId): AuthResult<ConnectedAccount>
+
     suspend fun removeAccount(accountId: AccountId)
 
     /** Silent; [forceRefresh] after a 401. Never shows UI. */

@@ -44,6 +44,7 @@ class FormatAndCoverTest {
         assertTrue(isDisplayableCover("content://media/1"))
         assertTrue(isDisplayableCover("file:///data/c.jpg"))
         assertFalse(isDisplayableCover("drive-abc123"))
+        assertTrue(isDisplayableCover("drive-image://acc/file1"))
         assertFalse(isDisplayableCover("drive://abc"))
         assertFalse(isDisplayableCover(null))
         assertFalse(isDisplayableCover(""))

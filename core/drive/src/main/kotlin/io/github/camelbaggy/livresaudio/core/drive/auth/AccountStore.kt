@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 
-/** Connected accounts. Never stores a token (CLAUDE.md §5.1). Room replaces this at lot 1. */
+/** Connected accounts. Never stores a token (CLAUDE.md §5.1). Implemented over Room by [RoomAccountStore]. */
 interface AccountStore {
     val accounts: Flow<List<ConnectedAccount>>
 
@@ -41,6 +41,10 @@ fun assignProfile(accounts: List<ConnectedAccount>): List<ConnectedAccount> {
 @Serializable
 private data class StoredAccount(val id: String, val email: String, val displayName: String? = null, val role: String)
 
+/**
+ * LEGACY store (trial E1): accounts used to live in a DataStore. Since task 1.2 Room is the only source of truth;
+ * this class is now only read by [AccountMigration] to carry the existing accounts (same ids) over to Room.
+ */
 internal class DataStoreAccountStore(
     private val dataStore: DataStore<Preferences>,
     private val newId: () -> String = { UUID.randomUUID().toString() }

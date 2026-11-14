@@ -24,6 +24,9 @@ private class FakeAuth(private var next: AuthResult<AccessToken>? = null) : Driv
 
     override suspend fun addAccount(ui: AuthUi, role: AccountRole): AuthResult<ConnectedAccount> = AuthResult.Cancelled
 
+    override suspend fun reconnectAccount(ui: AuthUi, accountId: AccountId): AuthResult<ConnectedAccount> =
+        AuthResult.Cancelled
+
     override suspend fun removeAccount(accountId: AccountId) = Unit
 
     override suspend fun getAccessToken(accountId: AccountId, forceRefresh: Boolean): AuthResult<AccessToken> {

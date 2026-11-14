@@ -18,6 +18,7 @@ import io.github.camelbaggy.livresaudio.core.model.BookAnchor
 import io.github.camelbaggy.livresaudio.core.model.BookOrigin
 import io.github.camelbaggy.livresaudio.core.model.BookState
 import io.github.camelbaggy.livresaudio.core.model.DiscoveredBook
+import io.github.camelbaggy.livresaudio.core.model.DriveItem
 import io.github.camelbaggy.livresaudio.core.model.FieldSource
 import io.github.camelbaggy.livresaudio.core.model.MatchState
 import io.github.camelbaggy.livresaudio.core.model.ParsedName
@@ -96,6 +97,11 @@ class RoomLibraryRepository @Inject constructor(
                 totalBytes = discovered.files.sumOf { it.sizeBytes ?: 0L },
                 totalDurationMs = mergedFiles.totalDurationMs()
             ).withParsedName(discovered.parsed, FieldMeta(FieldSource.FOLDER, nowMs))
+                .withFolderCover(
+                    discovered.coverCandidates.firstOrNull(),
+                    accountId,
+                    FieldMeta(FieldSource.FOLDER, nowMs)
+                )
             books.upsert(updated)
             applyFiles(bookId, mergedFiles)
         }
@@ -223,6 +229,27 @@ internal fun BookEntity.withParsedName(parsed: ParsedName, meta: FieldMeta): Boo
         seriesIndex = seriesIndex,
         fieldSources = sources
     )
+}
+
+/** Scheme of the cover URI of a Drive image found next to the audio files (`drive-image://<accountId>/<fileId>`). */
+const val DRIVE_IMAGE_SCHEME = "drive-image"
+
+fun driveImageUri(accountId: AccountId, driveFileId: String): String =
+    "$DRIVE_IMAGE_SCHEME://${accountId.value}/$driveFileId"
+
+/**
+ * Cover found in the book folder (`cover.jpg`…), with provenance FOLDER: merged by the single rule (CLAUDE.md §4.3),
+ * so it never replaces an EMBEDDED or USER cover.
+ */
+internal fun BookEntity.withFolderCover(candidate: DriveItem?, accountId: AccountId, meta: FieldMeta): BookEntity {
+    if (candidate == null) return this
+    val result = mergeField(
+        MergedField(coverUri, fieldSources[BookField.COVER_URI]),
+        driveImageUri(accountId, candidate.id),
+        meta
+    )
+    val newMeta = result.meta ?: return this
+    return copy(coverUri = result.value, fieldSources = fieldSources + (BookField.COVER_URI to newMeta))
 }
 
 /** Room does not order `@Relation` lists: files by `sortIndex`, chapters by `indexInBook`. */

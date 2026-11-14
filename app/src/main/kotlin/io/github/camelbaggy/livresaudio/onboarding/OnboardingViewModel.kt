@@ -102,7 +102,6 @@ class OnboardingViewModel @Inject constructor(
     private val store: AccountStore,
     private val repository: AccountRepository,
     private val folders: FolderBrowser,
-    private val linker: AccountLinker,
     private val clock: Clock
 ) : ViewModel() {
     private val local = MutableStateFlow(Local())
@@ -126,7 +125,6 @@ class OnboardingViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            linker.syncAll()
             // Coming back to the onboarding with accounts already connected: start at the summary.
             if (store.list().isNotEmpty() && local.value.step == OnboardingStep.Welcome) {
                 local.update { it.copy(step = OnboardingStep.Summary) }
@@ -150,7 +148,6 @@ class OnboardingViewModel @Inject constructor(
             local.update { it.copy(step = OnboardingStep.Connecting, error = null) }
             when (val result = auth.addAccount(ui, role)) {
                 is AuthResult.Success -> {
-                    linker.syncAll()
                     startBrowsing(result.value)
                 }
 
@@ -259,7 +256,7 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun removeRoot(rootId: Long) {
-        viewModelScope.launch { repository.removeWatchedRoot(rootId) }
+        viewModelScope.launch { repository.removeWatchedRoot(rootId, clock.millis()) }
     }
 
     fun showSummary() = local.update { it.copy(step = OnboardingStep.Summary, error = null) }

@@ -50,6 +50,31 @@ class GoogleDriveAuthProvider internal constructor(
         return AuthResult.Success(account)
     }
 
+    override suspend fun reconnectAccount(ui: AuthUi, accountId: AccountId): AuthResult<ConnectedAccount> {
+        val activityUi = ui as? ActivityAuthUi
+            ?: return AuthResult.Failure("interface d'authentification incompatible")
+        val account = store.find(accountId) ?: return AuthResult.Failure("compte inconnu")
+        lastTokens.remove(accountId)?.let { gateway.clearToken(it) }
+        val token = when (val granted = gateway.authorize(account.email, activityUi)) {
+            is GatewayResult.Granted -> granted.token
+            GatewayResult.Cancelled -> return AuthResult.Cancelled
+            GatewayResult.ConsentRequired -> return AuthResult.NeedsUserAction
+            GatewayResult.NetworkUnavailable -> return AuthResult.NetworkUnavailable
+            is GatewayResult.Failed -> return AuthResult.Failure(granted.message)
+        }
+        val user = when (val result = about.fetch(token)) {
+            is DriveResult.Success -> result.value
+            is DriveResult.Failure -> return result.error.toAuthFailure()
+        }
+        // The consent is bound to the address (`setAccount`); a different answer must never rebind the account.
+        if (user.emailAddress != null && !user.emailAddress.equals(account.email, ignoreCase = true)) {
+            return AuthResult.Failure("adresse différente de celle du compte")
+        }
+        val updated = store.upsert(account.email, user.displayName, account.role)
+        lastTokens[updated.id] = token.value
+        return AuthResult.Success(updated)
+    }
+
     override suspend fun removeAccount(accountId: AccountId) {
         lastTokens.remove(accountId)?.let { gateway.clearToken(it) }
         store.remove(accountId)
