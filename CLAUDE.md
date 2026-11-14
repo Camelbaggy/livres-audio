@@ -539,4 +539,5 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | 2026-11-14 | Environnement cloud « livres-audio » : accès `dl.google.com` (SDK), `speech.platform.bing.com` et Hugging Face (voix TTS) ; SDK installé par `scripts/install-android-sdk.sh` | Compiler et tester dans le cloud ; banc d'essai TTS |
 | 2026-11-14 | `runBlocking` toléré dans les deux intercepteurs OkHttp (jeton) : API synchrone, fils d'OkHttp uniquement | Seule façon d'appeler `getAccessToken` (suspend) depuis OkHttp |
 | 2026-11-14 | Écran de consentement : pages d'accueil et de confidentialité publiées par GitHub Pages depuis `site/` (domaine `camelbaggy.github.io`) | Exigées par Google pour publier « En production » |
+| 2026-11-14 | Téléphones cibles : Pixel 10 Pro XL et Pixel 9, Android 17 (API 37, = targetSdk) ; Android Auto sans fil ; applications remplacées : CloudBeats (les deux) et Smart AudioBook Player (utilisateur) | Prérequis partie C |
 | 2026-11-14 | CLI TTS en `argparse` (pas de dépendance) ; moteurs lourds en extras `uv` optionnels | Installation de base légère |
