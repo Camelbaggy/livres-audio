@@ -98,6 +98,41 @@ class GoogleDriveAuthProviderTest {
     }
 
     @Test
+    fun reconnectRedoesConsentForTheSameAccountWithoutChooser() = runTest {
+        val account = store.upsert("Réel@example.test", "Ancien", AccountRole.SHARED)
+        gateway.result = GatewayResult.Granted(AccessToken("t9", null))
+
+        val result = provider.reconnectAccount(FakeUi(null), account.id)
+
+        val reconnected = assertIs<AuthResult.Success<ConnectedAccount>>(result).value
+        assertEquals(account.id, reconnected.id)
+        assertEquals(AccountRole.SHARED, reconnected.role)
+        assertEquals("Nom", reconnected.displayName)
+        // Interactive authorize on the stored address; the chooser (FakeUi(null) would cancel) is not involved.
+        assertEquals(listOf("Réel@example.test" to true), gateway.authorized)
+        assertEquals(1, store.list().size)
+    }
+
+    @Test
+    fun reconnectRefusesAnotherAddressAndKeepsTheAccountAsIs() = runTest {
+        val account = store.upsert("moi@example.test", null, AccountRole.SHARED)
+
+        val result = provider.reconnectAccount(FakeUi(null), account.id)
+
+        assertIs<AuthResult.Failure>(result)
+        assertEquals(listOf(account), store.list())
+    }
+
+    @Test
+    fun reconnectMapsCancellationAndUnknownAccount() = runTest {
+        val account = store.upsert("Réel@example.test", null, AccountRole.PERSONAL)
+        gateway.result = GatewayResult.Cancelled
+        assertEquals(AuthResult.Cancelled, provider.reconnectAccount(FakeUi(null), account.id))
+        assertIs<AuthResult.Failure>(provider.reconnectAccount(FakeUi(null), AccountId("inconnu")))
+        assertIs<AuthResult.Failure>(provider.reconnectAccount(object : AuthUi {}, account.id))
+    }
+
+    @Test
     fun silentTokenTargetsStoredAddressWithoutUi() = runTest {
         val account = store.upsert("moi@example.test", null, AccountRole.PERSONAL)
 

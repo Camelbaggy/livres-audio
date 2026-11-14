@@ -44,7 +44,7 @@ class OnboardingViewModelTest {
 
     private fun vm(): OnboardingViewModel {
         val clock = Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)
-        return OnboardingViewModel(auth, store, repo, browser, AccountLinker(store, repo, clock), clock)
+        return OnboardingViewModel(auth, store, repo, browser, clock)
     }
 
     @Test
@@ -64,7 +64,7 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun connectingSharedAccountLinksItAndOpensFolders() {
+    fun connectingSharedAccountOpensFolders() {
         val vm = vm()
         vm.start()
         vm.chooseRole(AccountRole.SHARED, NoUi)
@@ -72,8 +72,6 @@ class OnboardingViewModelTest {
         assertEquals(OnboardingStep.ChooseFolders, s.step)
         assertEquals(AccountRole.SHARED, s.accounts.single().role)
         assertFalse(s.sharedRoleAvailable)
-        // Linked into Room with the same id.
-        assertEquals(store.accountsNow().single().id, repo.accountsFlow.value.single().id)
         // Listing as returned by the browser (sorting is the browser's job, see FolderBrowserTest).
         assertEquals(listOf("Livres 10", "Livres 2", "Audio"), s.browser.folders.map { it.name })
         assertEquals(listOf("Mon Drive"), s.browser.path.map { it.name })
@@ -194,6 +192,4 @@ class OnboardingViewModelTest {
         assertEquals(OnboardingStep.Summary, vm.state.value.step)
         assertIs<OnboardingStep>(vm.state.value.step)
     }
-
-    private fun FakeAccountStore.accountsNow() = kotlinx.coroutines.runBlocking { list() }
 }

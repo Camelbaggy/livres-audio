@@ -13,10 +13,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import coil3.compose.AsyncImage
+import io.github.camelbaggy.livresaudio.core.data.repo.DRIVE_IMAGE_SCHEME
 
-private val DISPLAYABLE_SCHEMES = setOf("http", "https", "content", "file")
+private val DISPLAYABLE_SCHEMES = setOf("http", "https", "content", "file", DRIVE_IMAGE_SCHEME)
 
-/** True when Coil can load the cover (`drive-…` and other private schemes cannot). Pure. */
+/** True when Coil can load the cover (`drive-image` is served by [DriveImageFetcher]; other private schemes cannot). Pure. */
 fun isDisplayableCover(coverUri: String?): Boolean {
     if (coverUri.isNullOrBlank()) return false
     val scheme = coverUri.substringBefore(':', missingDelimiterValue = "").lowercase()

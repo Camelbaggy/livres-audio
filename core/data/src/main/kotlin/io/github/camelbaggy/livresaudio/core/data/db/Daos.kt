@@ -89,6 +89,9 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE rootId = :rootId")
     suspend fun getByRoot(rootId: String): List<BookEntity>
 
+    @Query("SELECT * FROM books WHERE accountId = :accountId")
+    suspend fun getByAccount(accountId: String): List<BookEntity>
+
     @Query("SELECT * FROM books WHERE fingerprint = :fingerprint")
     suspend fun getByFingerprint(fingerprint: String): List<BookEntity>
 

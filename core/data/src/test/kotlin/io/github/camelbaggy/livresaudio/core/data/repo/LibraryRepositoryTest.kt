@@ -158,6 +158,48 @@ class LibraryRepositoryTest : RepoTestBase() {
         assertEquals("S", after.seriesName) // empty field filled by FOLDER
     }
 
+    private fun image(id: String) = DriveItem(id, "cover.jpg", "image/jpeg", "folder1", 100, "img-$id", 1L)
+
+    @Test
+    fun folderImageBecomesCoverWithFolderProvenance() = runTest {
+        val withCover = folderBook(audio("f1", "m1")).copy(coverCandidates = listOf(image("img1")))
+        val id = repo.upsertDiscoveredBook(withCover, acc, BookOrigin.SHARED, 10)
+
+        val book = assertNotNull(repo.getBook(id)).book
+        assertEquals("drive-image://acc1/img1", book.coverUri)
+        assertEquals(FieldMeta(FieldSource.FOLDER, 10), book.fieldSources[BookField.COVER_URI])
+
+        // A book without image candidate keeps whatever cover it has.
+        repo.upsertDiscoveredBook(folderBook(audio("f1", "m1")), acc, BookOrigin.SHARED, 20)
+        assertEquals("drive-image://acc1/img1", assertNotNull(repo.getBook(id)).book.coverUri)
+    }
+
+    @Test
+    fun folderImageNeverReplacesEmbeddedOrUserCover() = runTest {
+        val withCover = folderBook(audio("f1", "m1")).copy(coverCandidates = listOf(image("img1")))
+        val id = repo.upsertDiscoveredBook(withCover, acc, BookOrigin.SHARED, 10)
+        val book = assertNotNull(repo.getBook(id)).book
+        db.bookDao().upsert(
+            book.copy(
+                coverUri = "file:///covers/x.jpg",
+                fieldSources = book.fieldSources + (BookField.COVER_URI to FieldMeta(FieldSource.EMBEDDED, 11))
+            )
+        )
+
+        repo.upsertDiscoveredBook(withCover, acc, BookOrigin.SHARED, 9_999)
+        assertEquals("file:///covers/x.jpg", assertNotNull(repo.getBook(id)).book.coverUri)
+
+        val again = assertNotNull(repo.getBook(id)).book
+        db.bookDao().upsert(
+            again.copy(
+                coverUri = "content://galerie/1",
+                fieldSources = again.fieldSources + (BookField.COVER_URI to FieldMeta(FieldSource.USER, 12))
+            )
+        )
+        repo.upsertDiscoveredBook(withCover, acc, BookOrigin.SHARED, 99_999)
+        assertEquals("content://galerie/1", assertNotNull(repo.getBook(id)).book.coverUri)
+    }
+
     @Test
     fun missingAndBackToPresent() = runTest {
         val a = repo.upsertDiscoveredBook(folderBook(audio("f1", "m1")), acc, BookOrigin.SHARED, 10)

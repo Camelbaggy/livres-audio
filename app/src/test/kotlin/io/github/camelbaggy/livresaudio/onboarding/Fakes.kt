@@ -48,6 +48,15 @@ class FakeAuth(private val store: FakeAccountStore) : DriveAuthProvider {
         return next ?: AuthResult.Success(store.upsert(nextEmail, null, role))
     }
 
+    var reconnectResult: AuthResult<ConnectedAccount>? = null
+    val reconnected = mutableListOf<AccountId>()
+
+    override suspend fun reconnectAccount(ui: AuthUi, accountId: AccountId): AuthResult<ConnectedAccount> {
+        reconnected += accountId
+        return reconnectResult ?: store.find(accountId)?.let { AuthResult.Success(it) }
+            ?: AuthResult.Failure("compte inconnu")
+    }
+
     override suspend fun removeAccount(accountId: AccountId) = store.remove(accountId)
 
     override suspend fun getAccessToken(accountId: AccountId, forceRefresh: Boolean): AuthResult<AccessToken> =
@@ -58,6 +67,7 @@ class FakeAccountRepository : AccountRepository {
     val accountsFlow = MutableStateFlow<List<ConnectedAccount>>(emptyList())
     val rootsFlow = MutableStateFlow<List<WatchedRootEntity>>(emptyList())
     private var nextId = 1L
+    val removedAt = mutableListOf<Pair<AccountId, Long>>()
 
     override fun observeAccounts(): Flow<List<ConnectedAccount>> = accountsFlow
 
@@ -67,7 +77,8 @@ class FakeAccountRepository : AccountRepository {
         accountsFlow.value = accountsFlow.value.filter { it.id != account.id } + account
     }
 
-    override suspend fun removeAccount(id: AccountId) {
+    override suspend fun removeAccount(id: AccountId, nowMs: Long) {
+        removedAt += id to nowMs
         accountsFlow.value = accountsFlow.value.filter { it.id != id }
         rootsFlow.value = rootsFlow.value.filter { it.accountId != id.value }
     }
@@ -83,7 +94,7 @@ class FakeAccountRepository : AccountRepository {
         rootsFlow.value = rootsFlow.value + WatchedRootEntity(nextId++, accountId.value, driveFolderId, name, nowMs)
     }
 
-    override suspend fun removeWatchedRoot(rootId: Long) {
+    override suspend fun removeWatchedRoot(rootId: Long, nowMs: Long) {
         rootsFlow.value = rootsFlow.value.filter { it.id != rootId }
     }
 }

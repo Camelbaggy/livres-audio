@@ -13,6 +13,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.runTest
 
 class AccountStoreTest {
@@ -79,7 +80,8 @@ class AccountStoreTest {
         }
         val first = CoroutineScope(Job())
         store(file, first).upsert("moi@example.test", "Moi", AccountRole.PERSONAL)
-        first.cancel()
+        // Joins: the DataStore must really be closed before a second one opens the same file.
+        first.coroutineContext[Job]!!.cancelAndJoin()
 
         val second = CoroutineScope(Job())
         val reread = store(file, second).list()

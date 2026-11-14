@@ -11,15 +11,18 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.camelbaggy.livresaudio.core.data.repo.AccountRepository
 import io.github.camelbaggy.livresaudio.core.drive.auth.AboutFetcher
+import io.github.camelbaggy.livresaudio.core.drive.auth.AccountMigration
 import io.github.camelbaggy.livresaudio.core.drive.auth.AccountStore
 import io.github.camelbaggy.livresaudio.core.drive.auth.AuthorizationGateway
-import io.github.camelbaggy.livresaudio.core.drive.auth.DataStoreAccountStore
 import io.github.camelbaggy.livresaudio.core.drive.auth.GmsAuthorizationGateway
 import io.github.camelbaggy.livresaudio.core.drive.auth.GoogleDriveAuthProvider
+import io.github.camelbaggy.livresaudio.core.drive.auth.RoomAccountStore
 import io.github.camelbaggy.livresaudio.core.drive.rest.DriveHttp
 import io.github.camelbaggy.livresaudio.core.drive.rest.DriveRestClient
 import io.github.camelbaggy.livresaudio.core.model.DriveAuthProvider
+import java.time.Clock
 import javax.inject.Provider
 import javax.inject.Singleton
 
@@ -33,7 +36,13 @@ object DriveHiltModule {
 
     @Provides
     @Singleton
-    fun accountStore(dataStore: DataStore<Preferences>): AccountStore = DataStoreAccountStore(dataStore)
+    fun accountMigration(dataStore: DataStore<Preferences>, repository: AccountRepository, clock: Clock) =
+        AccountMigration(dataStore, repository, clock)
+
+    @Provides
+    @Singleton
+    fun accountStore(repository: AccountRepository, migration: AccountMigration, clock: Clock): AccountStore =
+        RoomAccountStore(repository, migration, clock)
 
     @Provides
     @Singleton

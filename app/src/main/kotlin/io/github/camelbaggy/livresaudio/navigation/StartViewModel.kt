@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.camelbaggy.livresaudio.core.data.repo.AccountRepository
 import io.github.camelbaggy.livresaudio.core.drive.auth.AccountStore
-import io.github.camelbaggy.livresaudio.onboarding.AccountLinker
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,8 +17,7 @@ fun resolveStartDestination(accountCount: Int, rootCount: Int): AppDestination =
     if (accountCount > 0 && rootCount > 0) AppDestination.Library else AppDestination.Onboarding
 
 @HiltViewModel
-class StartViewModel @Inject constructor(store: AccountStore, repository: AccountRepository, linker: AccountLinker) :
-    ViewModel() {
+class StartViewModel @Inject constructor(store: AccountStore, repository: AccountRepository) : ViewModel() {
     private val _destination = MutableStateFlow<AppDestination?>(null)
 
     /** Null while resolving; computed once, never changes afterwards. */
@@ -27,7 +25,6 @@ class StartViewModel @Inject constructor(store: AccountStore, repository: Accoun
 
     init {
         viewModelScope.launch {
-            linker.syncAll()
             _destination.value = resolveStartDestination(store.list().size, repository.getWatchedRoots().size)
         }
     }

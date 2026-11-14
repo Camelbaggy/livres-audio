@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import io.github.camelbaggy.livresaudio.accounts.AccountsScreen
 import io.github.camelbaggy.livresaudio.book.BookDetailScreen
 import io.github.camelbaggy.livresaudio.book.BookDetailViewModel
 import io.github.camelbaggy.livresaudio.core.drive.auth.ActivityAuthUi
@@ -34,6 +35,7 @@ object Routes {
     const val BOOK = "livre/{${BookDetailViewModel.ARG_BOOK_ID}}"
     const val PLAYER = "lecteur"
     const val SETTINGS = "reglages"
+    const val ACCOUNTS = "reglages/comptes"
     const val DIAGNOSTIC = "diagnostic"
     const val E1 = "diagnostic/e1"
     const val E2 = "diagnostic/e2"
@@ -73,7 +75,7 @@ fun AppNavigation(authUi: ActivityAuthUi) {
                 onOpenBook = { navController.navigate(Routes.book(it)) },
                 onOpenPlayer = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                onEditSetup = { navController.navigate(Routes.ONBOARDING) },
+                onEditSetup = { navController.navigate(Routes.ACCOUNTS) },
                 onOpenDiagnostic = { navController.navigate(Routes.DIAGNOSTIC) }
             )
         }
@@ -91,7 +93,19 @@ fun AppNavigation(authUi: ActivityAuthUi) {
             PlayerScreen(viewModel = hiltViewModel(), onBack = { navController.popBackStack() })
         }
         composable(Routes.SETTINGS) {
-            ListeningSettingsScreen(viewModel = hiltViewModel(), onBack = { navController.popBackStack() })
+            ListeningSettingsScreen(
+                viewModel = hiltViewModel(),
+                onOpenAccounts = { navController.navigate(Routes.ACCOUNTS) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Routes.ACCOUNTS) {
+            AccountsScreen(
+                viewModel = hiltViewModel(),
+                authUi = authUi,
+                onAddAccount = { navController.navigate(Routes.ONBOARDING) },
+                onBack = { navController.popBackStack() }
+            )
         }
         composable(Routes.DIAGNOSTIC) {
             DiagnosticMenuScreen(

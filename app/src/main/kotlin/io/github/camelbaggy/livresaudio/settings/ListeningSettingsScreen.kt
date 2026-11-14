@@ -38,7 +38,12 @@ import io.github.camelbaggy.livresaudio.util.formatSpeed
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListeningSettingsScreen(viewModel: ListeningSettingsViewModel, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun ListeningSettingsScreen(
+    viewModel: ListeningSettingsViewModel,
+    onOpenAccounts: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     Scaffold(
         modifier = modifier,
@@ -58,6 +63,11 @@ fun ListeningSettingsScreen(viewModel: ListeningSettingsViewModel, onBack: () ->
             modifier = Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            OutlinedButton(
+                onClick = onOpenAccounts,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+            ) { Text(stringResource(R.string.settings_accounts)) }
+            HorizontalDivider()
             SectionTitle(R.string.settings_rewind_title)
             SwitchRow(
                 stringResource(R.string.settings_rewind_enabled),
