@@ -4,7 +4,7 @@
 
     <!-- Essai E1 (lot 0) -->
     <string name="e1_title">Essai E1 : authentification Drive</string>
-    <string name="e1_intro">Écran temporaire de validation du lot 0. Il sera remplacé par l\'accueil au lot 1.</string>
+    <string name="e1_intro">Écran temporaire de validation du lot 0, accessible depuis les outils de diagnostic.</string>
     <string name="e1_add_account">Ajouter un compte</string>
     <string name="e1_role_dialog_title">Rôle du compte à ajouter</string>
     <string name="e1_role_shared">Drive commun</string>
@@ -29,8 +29,8 @@
     <!-- Essai E2 (lot 0) -->
     <string name="e2_title">Essai E2 : lecture depuis Drive</string>
     <string name="e2_intro">Écran temporaire de validation du lot 0 : lecture en flux avec cache disque, déplacement dans le fichier, coupure réseau.</string>
-    <string name="e2_back">Retour à l\'essai E1</string>
-    <string name="e2_no_account">Aucun compte connecté : ajoutez-en un dans l\'essai E1.</string>
+    <string name="e2_back">Retour</string>
+    <string name="e2_no_account">Aucun compte connecté : ajoutez-en un dans l\'essai E1 ou à l\'accueil.</string>
     <string name="e2_account">Compte utilisé pour la lecture</string>
     <string name="e2_search_hint">Début d\'un mot du nom du fichier</string>
     <string name="e2_search">Chercher</string>
@@ -54,4 +54,62 @@
     <string name="e2_network_on">Réseau : disponible</string>
     <string name="e2_network_off">Réseau : indisponible</string>
     <string name="e2_clear_cache">Vider le cache</string>
+
+    <!-- Accueil (tâche 1.3) -->
+    <string name="welcome_title">Bienvenue</string>
+    <string name="welcome_text">Vos livres audio vous attendent dans Google Drive. Connectons votre compte, puis choisissons les dossiers où ils se trouvent.</string>
+    <string name="welcome_connect">Connecter un compte Google</string>
+    <string name="role_title">Quel est ce compte ?</string>
+    <string name="role_intro">Vous pourrez ajouter un autre compte ensuite.</string>
+    <string name="role_shared_title">Drive commun (familial)</string>
+    <string name="role_shared_text">Le compte partagé avec votre compagne ou compagnon : les livres que vous écoutez tous les deux.</string>
+    <string name="role_personal_title">Mon Drive personnel</string>
+    <string name="role_personal_text">Votre propre compte : vos livres à vous, vos positions et vos marque-pages.</string>
+    <string name="role_shared_taken">Un compte commun est déjà connecté.</string>
+    <string name="role_back">Retour</string>
+    <string name="connecting">Connexion en cours… Suivez les écrans de Google.</string>
+    <string name="error_shared_exists">Un seul compte commun est possible, et il est déjà connecté. Choisissez « Mon Drive personnel » pour ce compte.</string>
+    <string name="error_cancelled">La connexion a été annulée. Vous pouvez réessayer quand vous voulez.</string>
+    <string name="error_needs_action">Google demande une confirmation de votre part. Réessayez et acceptez l\'accès au Drive.</string>
+    <string name="error_network">Pas de connexion à internet pour le moment. Vérifiez le réseau, puis réessayez.</string>
+    <string name="error_failure">La connexion a échoué : %1$s</string>
+    <string name="folders_title">Où sont vos livres ?</string>
+    <string name="folders_intro">Compte : %1$s. Ouvrez un dossier puis appuyez sur « Choisir ce dossier ». Vous pouvez en choisir plusieurs.</string>
+    <string name="folders_breadcrumb">Chemin : %1$s</string>
+    <string name="folders_up">Dossier parent</string>
+    <string name="folders_open">Ouvrir le dossier %1$s</string>
+    <string name="folders_empty">Aucun sous-dossier ici.</string>
+    <string name="folders_choose">Choisir ce dossier</string>
+    <string name="folders_chosen">Dossier déjà choisi</string>
+    <string name="folders_loading">Chargement des dossiers…</string>
+    <string name="folders_error_network">Impossible de lire le Drive : pas de connexion.</string>
+    <string name="folders_error_auth">L\'accès au Drive doit être renouvelé : reconnectez ce compte.</string>
+    <string name="folders_error_other">Impossible de lire le Drive : %1$s</string>
+    <string name="folders_retry">Réessayer</string>
+    <string name="roots_title">Dossiers choisis</string>
+    <string name="roots_empty">Aucun dossier choisi pour le moment.</string>
+    <string name="roots_item">%1$s (%2$s)</string>
+    <string name="roots_remove">Retirer</string>
+    <string name="roots_remove_description">Retirer le dossier %1$s</string>
+    <string name="folders_continue">Continuer</string>
+    <string name="summary_title">C\'est presque prêt</string>
+    <string name="summary_accounts">Comptes connectés</string>
+    <string name="summary_account_shared">%1$s, Drive commun</string>
+    <string name="summary_account_personal">%1$s, Drive personnel</string>
+    <string name="summary_add_folder">Choisir d\'autres dossiers pour %1$s</string>
+    <string name="summary_add_account">Ajouter un autre compte</string>
+    <string name="summary_finish">Terminer</string>
+    <string name="summary_need_root">Choisissez au moins un dossier de livres pour terminer.</string>
+
+    <!-- Navigation, bibliothèque provisoire, diagnostic -->
+    <string name="library_title">Bibliothèque</string>
+    <string name="library_soon">Bibliothèque — bientôt</string>
+    <string name="library_roots_title">Dossiers surveillés</string>
+    <string name="library_edit_setup">Comptes et dossiers</string>
+    <string name="library_diagnostic">Outils de diagnostic</string>
+    <string name="diagnostic_title">Outils de diagnostic</string>
+    <string name="diagnostic_intro">Écrans d\'essai du lot 0, réservés aux vérifications techniques.</string>
+    <string name="diagnostic_e1">Essai E1 : authentification</string>
+    <string name="diagnostic_e2">Essai E2 : lecture depuis Drive</string>
+    <string name="diagnostic_back">Retour</string>
 </resources>
