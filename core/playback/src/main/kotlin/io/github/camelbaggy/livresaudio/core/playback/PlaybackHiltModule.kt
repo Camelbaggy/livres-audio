@@ -10,6 +10,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.camelbaggy.livresaudio.core.model.DriveAuthProvider
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -31,4 +33,12 @@ object PlaybackHiltModule {
         auth: Lazy<DriveAuthProvider>,
         cache: PlaybackCache
     ): PlaybackEngine = PlaybackEngine(context, auth = { auth.get() }, playbackCache = cache)
+
+    @Provides
+    @PlaybackMainDispatcher
+    fun mainDispatcher(): CoroutineDispatcher = Dispatchers.Main.immediate
+
+    @Provides
+    @PlaybackWriteDispatcher
+    fun writeDispatcher(): CoroutineDispatcher = Dispatchers.Default
 }

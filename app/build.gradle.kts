@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
@@ -90,7 +91,11 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.androidx.compiler)
 
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

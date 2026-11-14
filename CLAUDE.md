@@ -511,13 +511,13 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | Lot | État | Notes |
 |---|---|---|
 | 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 en cours chez l'utilisateur (`docs/prerequis.md`) ; E1, E2, E3 codés ; recettes `docs/recettes/essai-e1.md` et `essai-e2.md` à faire sur téléphone |
-| 1 Première version | À faire | — |
+| 1 Première version | En cours | Faits : 1.1 (Room v1, garde-fou de position), 1.3 (accueil, choix des dossiers), 1.4 (analyse + parcours Drive + tâche 12 h), 1.6 (service Media3, chapitres), 1.7 (`PositionKeeper`), 1.9 (cache 2 Go, déjà en E2). Reste : 1.2 (unifier comptes DataStore/Room), 1.5 (sondage étiquettes/durées), 1.8 (retour arrière, vitesse, sauts), 1.10 (bibliothèque, fiche, lecteur, réglages) |
 | 2 Réseau | À faire | — |
 | 3 Informations | À faire | — |
 | 4 Usage à deux | À faire | — |
 | 5 Hors ligne et confort | À faire | — |
 | 6 Voiture et finitions | À faire | — |
-| T0 Banc d'essai TTS | En cours | `tts bench` opérationnel (edge-tts, Piper, Kokoro en option) ; notation de l'utilisateur attendue |
+| T0 Banc d'essai TTS | En cours | `tts bench` opérationnel (edge-tts, Piper, Kokoro ; Google, Azure, ElevenLabs, Mistral avec `--budget-max`) ; notation des 8 voix gratuites attendue ; seul Google Chirp 3 HD tient dans le plafond (1 M car. gratuits/mois) |
 | T1–T4 | À faire | — |
 
 ### Points [À VÉRIFIER] — résultats
@@ -542,4 +542,6 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | 2026-11-14 | Téléphones cibles : Pixel 10 Pro XL et Pixel 9, Android 17 (API 37, = targetSdk) ; Android Auto sans fil ; applications remplacées : CloudBeats (les deux) et Smart AudioBook Player (utilisateur) | Prérequis partie C |
 | 2026-11-14 | §5.2 règle 1 assouplie : un dossier peut contenir plusieurs livres d'un seul fichier (détection par les noms) ; `bookId` d'un livre d'un seul fichier dérivé de `driveFileId` (§4.4) | Arborescences réelles (prérequis D) : un `.m4b` par tome dans un dossier de série, cas dominant du Drive personnel |
 | 2026-11-14 | Atelier TTS : PC Windows 11, Core i9-13900H, 24 Go, **pas de GPU dédié** (Iris Xe) → moteurs locaux lourds (XTTS, F5, Chatterbox, Kyutai) écartés par défaut, locaux légers (Piper, Kokoro) et en ligne privilégiés. Plafond **5 € par tome (10 € par tome si la différence est frappante)** ; essais payants acceptés, **paliers gratuits / versions d'essai d'abord** | Prérequis partie E |
+| 2026-11-14 | `PositionKeeper` : aucune écriture avant que le lecteur soit prêt sur le bon fichier à la position restaurée (tolérance max(3 s, 1 % de la cible), pour les recherches approximatives dans les longs MP3) ; écriture finale bornée par `runBlocking` ≤ 2 s dans `onTaskRemoved`/`onDestroy` (exception tolérée, comme les intercepteurs OkHttp) | Règle d'or ; un lecteur mal restauré ne doit jamais écraser la bonne position |
+| 2026-11-14 | Comptes : `AccountStore` (DataStore, `core:drive`) reste la source pour les jetons ; recopie **additive** vers Room (`AccountLinker`) ; unification prévue en 1.2 | Ne jamais supprimer automatiquement des racines surveillées |
 | 2026-11-14 | CLI TTS en `argparse` (pas de dépendance) ; moteurs lourds en extras `uv` optionnels | Installation de base légère |
