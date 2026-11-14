@@ -20,6 +20,8 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 dependencies {
+    // Flow in contracts only; pure Kotlin, no Android dependency.
+    api(libs.kotlinx.coroutines.core)
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit)
 }
