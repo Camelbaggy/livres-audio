@@ -511,13 +511,13 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | Lot | État | Notes |
 |---|---|---|
 | 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 en cours chez l'utilisateur (`docs/prerequis.md`) ; E1, E2, E3 codés ; recettes `docs/recettes/essai-e1.md` et `essai-e2.md` à faire sur téléphone |
-| 1 Première version | À faire | — |
+| 1 Première version | En cours | 1.1 fait (Room v1, dépôts, garde-fou de position) ; 1.4 partie pure faite (`LibraryBuilder`, `NameParser`, `PartsOrBooks`) ; reste : parcours Drive réel, 1.2, 1.3, 1.5–1.10 |
 | 2 Réseau | À faire | — |
 | 3 Informations | À faire | — |
 | 4 Usage à deux | À faire | — |
 | 5 Hors ligne et confort | À faire | — |
 | 6 Voiture et finitions | À faire | — |
-| T0 Banc d'essai TTS | En cours | `tts bench` opérationnel (edge-tts, Piper, Kokoro en option) ; notation de l'utilisateur attendue |
+| T0 Banc d'essai TTS | En cours | `tts bench` opérationnel (edge-tts, Piper, Kokoro ; Google, Azure, ElevenLabs, Mistral avec `--budget-max`) ; notation des 8 voix gratuites attendue ; seul Google Chirp 3 HD tient dans le plafond (1 M car. gratuits/mois) |
 | T1–T4 | À faire | — |
 
 ### Points [À VÉRIFIER] — résultats
