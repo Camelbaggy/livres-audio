@@ -17,6 +17,7 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import io.github.camelbaggy.livresaudio.core.drive.rest.DriveError
+import io.github.camelbaggy.livresaudio.core.library.probe.ProbeScheduling
 import java.util.concurrent.TimeUnit
 
 /** Background library walk (CLAUDE.md §5.2). Never throws: failures are typed in the [ScanReport]. */
@@ -28,7 +29,18 @@ class LibraryScanWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val report = scanner.scan()
-        return if (report.shouldRetry() && runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.success()
+        if (report.shouldRetry() && runAttemptCount < MAX_ATTEMPTS) return Result.retry()
+        enqueueProbe()
+        return Result.success()
+    }
+
+    /** Files discovered by the walk are probed (duration, tags, cover, chapters) right after it. */
+    private fun enqueueProbe() {
+        try {
+            ProbeScheduling.enqueue(WorkManager.getInstance(applicationContext))
+        } catch (_: IllegalStateException) {
+            // WorkManager not initialised (tests): the next walk will schedule the probe.
+        }
     }
 
     /** Transient failures are retried with backoff; auth or storage problems are not fixed by retrying. */

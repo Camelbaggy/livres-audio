@@ -99,7 +99,13 @@ class FakeProgressRepository(
         }
     }
 
-    override suspend fun setSpeedOverride(bookId: String, speed: Float?, nowMs: Long) = Unit
+    val speedCalls = mutableListOf<Pair<String, Float?>>()
+
+    override suspend fun setSpeedOverride(bookId: String, speed: Float?, nowMs: Long) {
+        val current = state.value ?: return
+        speedCalls += bookId to speed
+        state.value = current.copy(speed = speed)
+    }
 }
 
 /** A scriptable player: tests set [snap] and then fire the keeper's events. */

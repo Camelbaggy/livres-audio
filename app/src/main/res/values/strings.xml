@@ -103,8 +103,6 @@
 
     <!-- Navigation, bibliothèque provisoire, diagnostic -->
     <string name="library_title">Bibliothèque</string>
-    <string name="library_soon">Bibliothèque — bientôt</string>
-    <string name="library_roots_title">Dossiers surveillés</string>
     <string name="library_edit_setup">Comptes et dossiers</string>
     <string name="library_diagnostic">Outils de diagnostic</string>
     <string name="diagnostic_title">Outils de diagnostic</string>
@@ -112,4 +110,99 @@
     <string name="diagnostic_e1">Essai E1 : authentification</string>
     <string name="diagnostic_e2">Essai E2 : lecture depuis Drive</string>
     <string name="diagnostic_back">Retour</string>
+    <!-- Bibliothèque (tâche 1.10) -->
+    <string name="library_settings">Réglages</string>
+    <string name="library_search">Rechercher</string>
+    <string name="library_search_hint">Titre, auteur, narrateur, série</string>
+    <string name="library_search_close">Fermer la recherche</string>
+    <string name="library_search_clear">Effacer la recherche</string>
+    <string name="library_sort">Trier</string>
+    <string name="library_more">Plus d\'options</string>
+    <string name="sort_title">Titre</string>
+    <string name="sort_author">Auteur</string>
+    <string name="sort_added">Date d\'ajout</string>
+    <string name="sort_last_played">Dernier écouté</string>
+    <string name="library_empty">Aucun livre trouvé pour l\'instant — la bibliothèque se remplit pendant le premier parcours.</string>
+    <string name="library_no_result">Aucun livre ne correspond à « %1$s ».</string>
+    <string name="library_resume">Reprendre</string>
+    <string name="library_resume_play">Reprendre la lecture de %1$s</string>
+    <string name="library_untitled">Sans titre</string>
+    <string name="origin_shared">Commun</string>
+    <string name="origin_personal">Perso</string>
+    <string name="book_item_description">%1$s, %2$s</string>
+    <string name="progress_percent">%1$d %%</string>
+
+    <!-- Fiche du livre -->
+    <string name="book_back">Retour</string>
+    <string name="book_not_found">Ce livre n\'est plus dans la bibliothèque.</string>
+    <string name="book_narrated_by">Lu par %1$s</string>
+    <string name="book_series">%1$s, tome %2$s</string>
+    <string name="book_total_duration">Durée : %1$s</string>
+    <string name="book_progress">Progression : %1$s</string>
+    <string name="book_finished">Terminé</string>
+    <string name="book_not_started">Pas commencé</string>
+    <string name="book_play">Lire</string>
+    <string name="book_resume">Reprendre</string>
+    <string name="book_mark_finished">Marquer comme terminé</string>
+    <string name="book_reset">Remettre à zéro</string>
+    <string name="book_reset_title">Remettre à zéro ?</string>
+    <string name="book_reset_message">La position d\'écoute de ce livre sera effacée. Cette action est définitive.</string>
+    <string name="book_reset_confirm">Remettre à zéro</string>
+    <string name="book_description">Résumé</string>
+    <string name="book_chapters">Chapitres</string>
+    <string name="chapter_default">Chapitre %1$d</string>
+    <string name="cancel">Annuler</string>
+
+    <!-- Lecteur -->
+    <string name="player_title">Lecture en cours</string>
+    <string name="player_nothing">Aucun livre en cours de lecture.</string>
+    <string name="player_chapter_count">Chapitre %1$d sur %2$d</string>
+    <string name="player_chapter_position">%1$s / %2$s</string>
+    <string name="player_remaining">Il reste %1$s</string>
+    <string name="player_chapter_slider">Position dans le chapitre</string>
+    <string name="player_status_playing">En lecture</string>
+    <string name="player_status_paused">En pause</string>
+    <string name="player_status_loading">Chargement…</string>
+    <string name="player_status_waiting">En attente du réseau…</string>
+    <string name="player_status_not_found">Fichier introuvable</string>
+    <string name="player_status_error">Erreur de lecture</string>
+    <string name="player_status_ended">Terminé</string>
+    <string name="player_play">Lecture</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_skip_back">Reculer de %1$d secondes</string>
+    <string name="player_skip_forward">Avancer de %1$d secondes</string>
+    <string name="player_previous_chapter">Chapitre précédent</string>
+    <string name="player_next_chapter">Chapitre suivant</string>
+    <string name="player_speed">Vitesse de lecture : %1$s×</string>
+    <string name="player_speed_value">%1$s×</string>
+    <string name="player_chapters">Chapitres</string>
+    <string name="player_timer_soon">Minuterie (bientôt)</string>
+    <string name="player_timer">Minuterie</string>
+    <string name="player_bookmark_soon">Marque-page (bientôt)</string>
+    <string name="player_bookmark">Marque-page</string>
+    <string name="mini_player_open">Ouvrir le lecteur</string>
+
+    <!-- Permission de notification -->
+    <string name="notif_title">Notifications de lecture</string>
+    <string name="notif_message">Android doit vous autoriser à afficher la notification de lecture, qui permet de mettre en pause et de reprendre depuis l\'écran verrouillé, le casque ou la voiture.</string>
+    <string name="notif_allow">Continuer</string>
+    <string name="notif_later">Pas maintenant</string>
+
+    <!-- Réglages de lecture -->
+    <string name="settings_title">Réglages de lecture</string>
+    <string name="settings_rewind_title">Retour arrière à la reprise</string>
+    <string name="settings_rewind_enabled">Revenir un peu en arrière en reprenant</string>
+    <string name="settings_rewind_step_from">À partir de %1$s de pause : %2$s</string>
+    <string name="settings_rewind_step_below">Pause de moins de %1$s : %2$s</string>
+    <string name="settings_rewind_none">aucun retour</string>
+    <string name="settings_rewind_seconds">%1$d s</string>
+    <string name="settings_rewind_reset">Rétablir la table par défaut</string>
+    <string name="settings_skips_title">Sauts</string>
+    <string name="settings_skip_back">Recul : %1$d s</string>
+    <string name="settings_skip_forward">Avance : %1$d s</string>
+    <string name="settings_speed_title">Vitesse</string>
+    <string name="settings_speed_default">Vitesse par défaut : %1$s×</string>
+    <string name="settings_headset_title">Boutons du casque</string>
+    <string name="settings_headset_chapters">Suivant et précédent changent de chapitre (sinon : sauts)</string>
 </resources>
+

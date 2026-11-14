@@ -10,24 +10,35 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import io.github.camelbaggy.livresaudio.book.BookDetailScreen
+import io.github.camelbaggy.livresaudio.book.BookDetailViewModel
 import io.github.camelbaggy.livresaudio.core.drive.auth.ActivityAuthUi
 import io.github.camelbaggy.livresaudio.diagnostic.DiagnosticMenuScreen
 import io.github.camelbaggy.livresaudio.e1.E1Screen
 import io.github.camelbaggy.livresaudio.e1.E1ViewModel
 import io.github.camelbaggy.livresaudio.e2.E2Screen
 import io.github.camelbaggy.livresaudio.e2.E2ViewModel
-import io.github.camelbaggy.livresaudio.library.LibraryPlaceholderScreen
+import io.github.camelbaggy.livresaudio.library.LibraryScreen
 import io.github.camelbaggy.livresaudio.onboarding.OnboardingScreen
+import io.github.camelbaggy.livresaudio.player.PlayerScreen
+import io.github.camelbaggy.livresaudio.settings.ListeningSettingsScreen
 
 object Routes {
     const val ONBOARDING = "accueil"
     const val LIBRARY = "bibliotheque"
+    const val BOOK = "livre/{${BookDetailViewModel.ARG_BOOK_ID}}"
+    const val PLAYER = "lecteur"
+    const val SETTINGS = "reglages"
     const val DIAGNOSTIC = "diagnostic"
     const val E1 = "diagnostic/e1"
     const val E2 = "diagnostic/e2"
+
+    fun book(bookId: String) = "livre/${android.net.Uri.encode(bookId)}"
 }
 
 @UnstableApi
@@ -56,11 +67,31 @@ fun AppNavigation(authUi: ActivityAuthUi) {
             )
         }
         composable(Routes.LIBRARY) {
-            LibraryPlaceholderScreen(
+            LibraryScreen(
                 viewModel = hiltViewModel(),
+                playerViewModel = hiltViewModel(),
+                onOpenBook = { navController.navigate(Routes.book(it)) },
+                onOpenPlayer = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onEditSetup = { navController.navigate(Routes.ONBOARDING) },
                 onOpenDiagnostic = { navController.navigate(Routes.DIAGNOSTIC) }
             )
+        }
+        composable(
+            Routes.BOOK,
+            arguments = listOf(navArgument(BookDetailViewModel.ARG_BOOK_ID) { type = NavType.StringType })
+        ) {
+            BookDetailScreen(
+                viewModel = hiltViewModel(),
+                onBack = { navController.popBackStack() },
+                onOpenPlayer = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } }
+            )
+        }
+        composable(Routes.PLAYER) {
+            PlayerScreen(viewModel = hiltViewModel(), onBack = { navController.popBackStack() })
+        }
+        composable(Routes.SETTINGS) {
+            ListeningSettingsScreen(viewModel = hiltViewModel(), onBack = { navController.popBackStack() })
         }
         composable(Routes.DIAGNOSTIC) {
             DiagnosticMenuScreen(

@@ -38,7 +38,7 @@ class PlaybackEngine(private val context: Context, auth: () -> DriveAuthProvider
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
-            // Defaults until the settings of task 1.8 (CLAUDE.md §5.3: 30 s forward, 10 s back).
+            // Initial values only: the session's ChapterPlayer reads the live settings (task 1.8, CLAUDE.md §5.3).
             .setSeekForwardIncrementMs(DEFAULT_SEEK_FORWARD_MS)
             .setSeekBackIncrementMs(DEFAULT_SEEK_BACK_MS)
             .build()
