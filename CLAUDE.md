@@ -147,7 +147,7 @@ Chaque champ d'information a une provenance, par priorité décroissante : `USER
 
 ### 4.4 Identité et rattachement d'un livre (D5)
 
-- À la première découverte d'un dossier : `bookId = UUIDv5(espace de noms fixe du projet, driveFolderId)` — déterministe, donc les deux téléphones calculent le même identifiant sans se coordonner.
+- À la première découverte d'un livre : `bookId = UUIDv5(espace de noms fixe du projet, driveFolderId)` pour un livre-dossier, `UUIDv5(espace de noms, driveFileId)` pour un livre d'un seul fichier — déterministe, donc les deux téléphones calculent le même identifiant sans se coordonner. (`books.driveFolderId` contient alors le dossier parent, et le livre est repéré par son unique fichier.)
 - `fingerprint` = SHA-256 de la liste triée des MD5 des fichiers audio.
 - Avant de créer un livre pour un dossier inconnu, chercher un livre existant (présent, manquant, ou connu seulement par ses informations synchronisées) partageant **≥ 80 % des MD5** : si trouvé, c'est le même livre déplacé ou copié → on met à jour son dossier/compte/origine et on **conserve `bookId`**, progression, marque-pages, corrections.
 - Changement d'origine lors d'un rattachement : personnel → commun, les informations du livre sont publiées dans `.livres-audio/meta/` ; commun → personnel, elles sont copiées dans le profil et retirées du partagé (pierre tombale). Les progressions ne bougent jamais : elles sont toujours dans le profil de chacun.
@@ -195,10 +195,10 @@ app/                        APK de mise à jour (D12)
 
 Règles dossier → livre, appliquées à chaque racine surveillée :
 
-1. Un dossier contenant directement des fichiers audio = **un livre**.
+1. Un dossier contenant directement des fichiers audio = **un livre** dont ces fichiers sont les parties, **sauf** si leurs noms montrent que chaque fichier est un livre complet (règle de décision détaillée dans `docs/formes-de-noms.md` : après retrait du préfixe/suffixe commun, des nombres et des mots génériques — chapitre, partie, prologue, remerciements… —, s'il reste des titres distincts, chaque fichier est un livre). C'est le cas dominant du Drive personnel : un dossier de série avec un `.m4b` par tome.
 2. Un dossier ne contenant que des sous-dossiers = **regroupement** ; son nom est un indice (auteur ou série) pour les livres en dessous.
 3. Un dossier dont tous les sous-dossiers contenant de l'audio ont un nom de type disque/partie (`CD 1`, `Disque 2`, `Partie 3`, `Disc1`…) = **un seul livre** ; fichiers ordonnés par disque puis par nom.
-4. Un fichier audio isolé directement dans une racine ou un regroupement = un livre d'un seul fichier.
+4. Un fichier audio isolé directement dans une racine ou un regroupement = un livre d'un seul fichier. Un dossier peut être à la fois regroupement (sous-dossiers) et contenir des livres d'un seul fichier.
 5. Extensions audio : `mp3, m4a, m4b, aac, ogg, opus, flac, wav, wma` (ce dernier listé mais signalé « format non pris en charge »). Images du dossier = couvertures candidates (`cover.*`, `folder.*`, sinon la plus grande).
 
 Ordre des fichiers : numéro de disque puis de piste des étiquettes s'ils sont cohérents sur tout le livre ; sinon **tri naturel** du nom (`2` avant `10`).
@@ -269,7 +269,7 @@ Interface `MetadataProvider { suspend fun search(query: BookQuery): List<Candida
 | 2 | **iTunes Search** (`media=audiobook`, `country=FR`) | Titre, auteur, résumé, bonne couverture | Officielle, sans clé |
 | 3 | **Google Books** (`langRestrict=fr`) | Titre, auteur, résumé, année | Pour les livres sans édition audio commerciale ; couverture souvent médiocre |
 
-- Requête : titre + auteur nettoyés ; si échec, titre seul. Langue française privilégiée.
+- Requête : titre + auteur nettoyés ; si échec, titre seul. Langue française privilégiée, **mais** une part importante de la bibliothèque est en anglais (`docs/formes-de-noms.md`) : prévoir les catalogues anglophones (Audible US/UK, iTunes US) selon la langue détectée — à trancher au lot 3.
 - **Score** d'un candidat (0–1) : similarité du titre (0,5) + de l'auteur (0,3) + proximité de durée quand elle est connue des deux côtés (0,2 ; écart < 3 % = maximum). Normalisation avant comparaison : minuscules, sans accents, sans articles ni ponctuation.
 - **Décision** : score ≥ 0,85 **et** avance ≥ 0,10 sur le second → application automatique (`matchState = AUTO`). Entre 0,50 et 0,85, ou candidats trop proches → `NEEDS_REVIEW` : jusqu'à 5 candidats proposés sur la fiche, avec un indicateur discret dans la bibliothèque. En dessous → `UNMATCHED`, on garde étiquettes et noms de dossiers.
 - Les candidats et réponses sont mis en cache ; cadence limitée à 1 requête/s par fournisseur ; l'enrichissement tourne en tâche de fond (WorkManager, réseau requis) et ne bloque jamais l'affichage ni la lecture.
@@ -510,7 +510,7 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 
 | Lot | État | Notes |
 |---|---|---|
-| 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 en cours chez l'utilisateur (`docs/prerequis.md`) ; E1 codé (recette `docs/recettes/essai-e1.md` à faire sur téléphone) ; E3 codé ; E2 à faire |
+| 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 en cours chez l'utilisateur (`docs/prerequis.md`) ; E1, E2, E3 codés ; recettes `docs/recettes/essai-e1.md` et `essai-e2.md` à faire sur téléphone |
 | 1 Première version | À faire | — |
 | 2 Réseau | À faire | — |
 | 3 Informations | À faire | — |
@@ -525,7 +525,7 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | Point | Résultat | Date |
 |---|---|---|
 | E1 Authentification multi-comptes, durée, `drive.file` partagé | Code prêt : sélecteur système `AccountManager` puis `AuthorizationClient` ciblé par `setAccount` ; validation sur téléphone en attente | 2026-11-14 |
-| E2 Lecture en flux + cache sur Drive | — | — |
+| E2 Lecture en flux + cache sur Drive | Code prêt : `CacheDataSource` → `ResolvingDataSource` (compte porté par un en-tête interne retiré avant envoi) → OkHttp authentifié ; validation sur téléphone en attente | 2026-11-14 |
 | E3 Chapitres intégrés M4B/MP3 | Media3 lit `CHAP` (ID3) et la piste de chapitres QuickTime, **pas** l'atome Nero `chpl` → analyseur maison par plages d'octets dans `core/library/chapters` (testé sur fichiers ffmpeg ; reste à essayer sur de vrais M4B) | 2026-11-14 |
 | Catalogue Audible France / Audnexus | — | — |
 | Veille voix de synthèse (modèles, tarifs) | Première passe dans `tts/docs/veille-voix.md` (sources secondaires, à recouper avant tout achat) | 2026-11-14 |
@@ -539,4 +539,7 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | 2026-11-14 | Environnement cloud « livres-audio » : accès `dl.google.com` (SDK), `speech.platform.bing.com` et Hugging Face (voix TTS) ; SDK installé par `scripts/install-android-sdk.sh` | Compiler et tester dans le cloud ; banc d'essai TTS |
 | 2026-11-14 | `runBlocking` toléré dans les deux intercepteurs OkHttp (jeton) : API synchrone, fils d'OkHttp uniquement | Seule façon d'appeler `getAccessToken` (suspend) depuis OkHttp |
 | 2026-11-14 | Écran de consentement : pages d'accueil et de confidentialité publiées par GitHub Pages depuis `site/` (domaine `camelbaggy.github.io`) | Exigées par Google pour publier « En production » |
+| 2026-11-14 | Téléphones cibles : Pixel 10 Pro XL et Pixel 9, Android 17 (API 37, = targetSdk) ; Android Auto sans fil ; applications remplacées : CloudBeats (les deux) et Smart AudioBook Player (utilisateur) | Prérequis partie C |
+| 2026-11-14 | §5.2 règle 1 assouplie : un dossier peut contenir plusieurs livres d'un seul fichier (détection par les noms) ; `bookId` d'un livre d'un seul fichier dérivé de `driveFileId` (§4.4) | Arborescences réelles (prérequis D) : un `.m4b` par tome dans un dossier de série, cas dominant du Drive personnel |
+| 2026-11-14 | Atelier TTS : PC Windows 11, Core i9-13900H, 24 Go, **pas de GPU dédié** (Iris Xe) → moteurs locaux lourds (XTTS, F5, Chatterbox, Kyutai) écartés par défaut, locaux légers (Piper, Kokoro) et en ligne privilégiés. Plafond **5 € par tome (10 € par tome si la différence est frappante)** ; essais payants acceptés, **paliers gratuits / versions d'essai d'abord** | Prérequis partie E |
 | 2026-11-14 | CLI TTS en `argparse` (pas de dépendance) ; moteurs lourds en extras `uv` optionnels | Installation de base légère |

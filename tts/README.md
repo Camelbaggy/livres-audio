@@ -25,7 +25,10 @@ uv run tts moteurs         # liste les moteurs et leur disponibilité
 
 Résultat dans `bench-out/<date>/` : `voix-A.m4a`, `voix-B.m4a`… (ordre aléatoire),
 `ecoute.html` (à ouvrir, noter, exporter le JSON) et `cle.json`
-(**ne pas l'ouvrir avant d'avoir noté**). Les moteurs payants exigent `--autoriser-payant`.
+(**ne pas l'ouvrir avant d'avoir noté**). Les moteurs payants (`google`, `azure`, `elevenlabs`,
+`mistral`) exigent `--autoriser-payant` ; le coût maximal estimé est affiché et le banc refuse de
+démarrer au-delà de `--budget-max` (défaut 0,50 €). Clés : `GOOGLE_TTS_API_KEY`, `AZURE_SPEECH_KEY`
+(+ `AZURE_SPEECH_REGION`), `ELEVENLABS_API_KEY`, `MISTRAL_API_KEY`. Guide : `docs/essai-voix-payantes.md`.
 
 Veille des voix : `docs/veille-voix.md`.
 
