@@ -8,6 +8,8 @@ ANDROID_HOME="${ANDROID_HOME:-/opt/android-sdk}"
 CMDLINE_TOOLS_BUILD="${CMDLINE_TOOLS_BUILD:-16111833}"
 PLATFORM="${ANDROID_PLATFORM:-platforms;android-37.0}"
 BUILD_TOOLS="${ANDROID_BUILD_TOOLS:-build-tools;37.0.0}"
+# AGP 9.5 réclame aussi les build-tools 36.0.0.
+EXTRA_BUILD_TOOLS="build-tools;36.0.0"
 
 mkdir -p "$ANDROID_HOME"
 if [ ! -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
@@ -23,7 +25,7 @@ fi
 
 SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
 yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses >/dev/null || true
-"$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platform-tools" "$PLATFORM" "$BUILD_TOOLS" >/dev/null
+"$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platform-tools" "$PLATFORM" "$BUILD_TOOLS" "$EXTRA_BUILD_TOOLS" >/dev/null
 
 # Permet à Gradle de trouver le SDK sans variable d'environnement.
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"

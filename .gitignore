@@ -1,0 +1,33 @@
+# Gradle / build
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+# Local config
+local.properties
+# Clés et secrets
+*.jks
+*.keystore
+*.p12
+keystore.properties
+google-services.json
+.env
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+# NDK / divers
+.cxx/
+*.hprof
+# Python (tts/)
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
