@@ -511,8 +511,8 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | Lot | État | Notes |
 |---|---|---|
 | 0 Socle et essais | En cours | 0.2, 0.3, 0.4 faits ; 0.1 en cours chez l'utilisateur (`docs/prerequis.md`) ; E1, E2, E3 codés ; recettes `docs/recettes/essai-e1.md` et `essai-e2.md` à faire sur téléphone |
-| 1 Première version | Recette en cours | Tâches 1.1 à 1.10 fusionnées (PR 6–10). Recette sur Pixel 10 Pro XL : lecture (étapes 3 à 7) conforme ; couvertures lentes corrigées (sondage en deux phases, PR 10) et validées par l'utilisateur le 2026-11-15 ; reste : étapes 2, 7 bis et 8 de `docs/recettes/lot-1.md` |
-| 2 Réseau | À faire | — |
+| 1 Première version | **Terminé** | Tâches 1.1 à 1.10 fusionnées (PR 6–10). Recette `docs/recettes/lot-1.md` **validée par l'utilisateur** sur Pixel 10 Pro XL le 2026-11-15 (lenteur des couvertures corrigée en cours de recette, PR 10) |
+| 2 Réseau | En cours | — |
 | 3 Informations | À faire | — |
 | 4 Usage à deux | À faire | — |
 | 5 Hors ligne et confort | À faire | — |
