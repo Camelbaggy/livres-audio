@@ -518,8 +518,9 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | 5 Hors ligne et confort | À faire | — |
 | 6 Voiture et finitions | À faire | — |
 | T0 Banc d'essai TTS | Terminé | Voix retenue : **Google Chirp 3 HD « Aoede »** (fr-FR), dans le palier gratuit mensuel |
-| T1 Préparation EPUB | En cours | `tts prepare` fait ; tome 1 préparé (14 chapitres, ≈ 763 000 car., ≈ 14 h) ; relecture de 3 chapitres par l'utilisateur attendue |
-| T2–T4 | À faire | — |
+| T1 Préparation EPUB | Terminé | Tome 1 préparé (14 chapitres, ≈ 763 000 car., ≈ 14 h) ; 3 chapitres relus par l'utilisateur : RAS (2026-11-15) |
+| T2 Lexique, synthèse, assemblage | En cours | — |
+| T3–T4 | À faire | — |
 
 ### Points [À VÉRIFIER] — résultats
 
