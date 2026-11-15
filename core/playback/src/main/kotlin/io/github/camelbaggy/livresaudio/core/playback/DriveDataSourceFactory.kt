@@ -68,16 +68,19 @@ object DriveDataSourceFactory {
             ?: dataSpec.uri.toString()
     }
 
-    fun create(httpClient: OkHttpClient, cache: Cache, filesUrl: String = DRIVE_FILES_URL): DataSource.Factory {
+    fun create(httpClient: OkHttpClient, cache: Cache, filesUrl: String = DRIVE_FILES_URL): CacheDataSource.Factory {
         val http = ResolvingDataSource.Factory(OkHttpDataSource.Factory(httpClient)) { dataSpec ->
             resolve(dataSpec, filesUrl)
         }
-        return CacheDataSource.Factory()
-            .setCache(cache)
-            .setCacheKeyFactory(cacheKeyFactory)
-            .setUpstreamDataSourceFactory(http)
-            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+        return cacheFactory(cache, http)
     }
+
+    /** The cache layer on top of any [upstream]; shared by the player and the pre-cacher (same key, same flags). */
+    fun cacheFactory(cache: Cache, upstream: DataSource.Factory): CacheDataSource.Factory = CacheDataSource.Factory()
+        .setCache(cache)
+        .setCacheKeyFactory(cacheKeyFactory)
+        .setUpstreamDataSourceFactory(upstream)
+        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
     internal fun resolve(dataSpec: DataSpec, filesUrl: String): DataSpec {
         val ref = DriveMediaUri.parse(dataSpec.uri.toString())

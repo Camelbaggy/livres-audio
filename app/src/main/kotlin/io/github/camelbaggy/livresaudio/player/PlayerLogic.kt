@@ -9,7 +9,18 @@ import io.github.camelbaggy.livresaudio.core.playback.PlaybackStatus
 import io.github.camelbaggy.livresaudio.core.playback.computePlaybackStatus
 
 /** Status shown on the player screen and in the notification (CLAUDE.md §5.4). */
-enum class PlayerStatus { PLAYING, PAUSED, LOADING, WAITING_NETWORK, NOT_FOUND, ERROR, ENDED }
+enum class PlayerStatus {
+    PLAYING,
+    PAUSED,
+    LOADING,
+    WAITING_NETWORK,
+    NOT_FOUND,
+    ERROR,
+    ENDED;
+
+    /** A status the user must not miss: it replaces the chapter title in the mini-player. */
+    val isStreamProblem: Boolean get() = this == WAITING_NETWORK || this == NOT_FOUND
+}
 
 data class ChapterRow(val index: Int, val title: String?, val durationMs: Long?)
 
@@ -27,6 +38,8 @@ data class PlayerUiState(
     /** Remaining time of the book at the current speed; null when the total duration is unknown. */
     val remainingBookMs: Long? = null,
     val status: PlayerStatus = PlayerStatus.PAUSED,
+    /** Audio still available while [status] is [PlayerStatus.WAITING_NETWORK] (buffer + disk cache). */
+    val availableMs: Long? = null,
     val isPlaying: Boolean = false,
     val speed: Float = 1f,
     val skipBackMs: Long = ListeningSettings().skipBackMs,
@@ -35,8 +48,18 @@ data class PlayerUiState(
     val chapterTitle: String? get() = chapters.getOrNull(chapterIndex)?.title
 }
 
-/** Maps the raw player state to the displayed status; an error mentioning HTTP 404 is "file not found". Pure. */
-fun statusOf(state: ControllerState): PlayerStatus = when (
+/**
+ * Maps the raw player state to the displayed status. The service's stream state wins ("file not found" on HTTP
+ * 404, "waiting for the network" while stalled or failed for lack of network); the player's own state and an
+ * error mentioning HTTP 404 are the fallback. Pure.
+ */
+fun statusOf(state: ControllerState): PlayerStatus = when {
+    state.notFound -> PlayerStatus.NOT_FOUND
+    state.waitingForNetwork -> PlayerStatus.WAITING_NETWORK
+    else -> statusOfPlayerState(state)
+}
+
+private fun statusOfPlayerState(state: ControllerState): PlayerStatus = when (
     val status = computePlaybackStatus(state.playbackState, state.playWhenReady, state.online, state.error)
 ) {
     PlaybackStatus.Playing -> PlayerStatus.PLAYING
@@ -98,6 +121,7 @@ fun buildPlayerState(controller: ControllerState, active: ActiveBook?, settings:
             controller.speed
         ),
         status = statusOf(controller),
+        availableMs = controller.availableMs.takeIf { controller.waitingForNetwork },
         isPlaying = controller.playbackState == Player.STATE_READY && controller.playWhenReady,
         speed = controller.speed,
         skipBackMs = settings.skipBackMs,

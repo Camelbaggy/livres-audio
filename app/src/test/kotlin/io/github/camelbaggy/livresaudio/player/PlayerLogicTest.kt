@@ -83,6 +83,47 @@ class PlayerLogicTest {
     }
 
     @Test
+    fun `l'etat du flux publie par le service l'emporte sur l'etat brut du lecteur`() {
+        val waiting = ControllerState(
+            playbackState = Player.STATE_IDLE,
+            playWhenReady = true,
+            error = "PlaybackException / UnknownHostException",
+            waitingForNetwork = true,
+            availableMs = 720_000
+        )
+        assertEquals(PlayerStatus.WAITING_NETWORK, statusOf(waiting))
+        // Offline from the OS point of view or not, the service says what it is.
+        assertEquals(
+            PlayerStatus.WAITING_NETWORK,
+            statusOf(ControllerState(playbackState = Player.STATE_BUFFERING, online = true, waitingForNetwork = true))
+        )
+        assertEquals(PlayerStatus.NOT_FOUND, statusOf(ControllerState(error = "X / Y", notFound = true)))
+        assertEquals(
+            PlayerStatus.NOT_FOUND,
+            statusOf(ControllerState(waitingForNetwork = true, notFound = true))
+        )
+    }
+
+    @Test
+    fun `la duree disponible n'est exposee que pendant l'attente du reseau`() {
+        val waiting = ControllerState(
+            connected = true,
+            playbackState = Player.STATE_BUFFERING,
+            playWhenReady = true,
+            waitingForNetwork = true,
+            availableMs = 720_000
+        )
+        val state = buildPlayerState(waiting, active, ListeningSettings())
+        assertEquals(PlayerStatus.WAITING_NETWORK, state.status)
+        assertEquals(720_000L, state.availableMs)
+        assertEquals(true, state.status.isStreamProblem)
+
+        val healthy = buildPlayerState(waiting.copy(waitingForNetwork = false), active, ListeningSettings())
+        assertEquals(null, healthy.availableMs)
+        assertEquals(false, healthy.status.isStreamProblem)
+    }
+
+    @Test
     fun `sans livre charge`() {
         val state = buildPlayerState(ControllerState(), null, ListeningSettings())
         assertEquals(false, state.loaded)

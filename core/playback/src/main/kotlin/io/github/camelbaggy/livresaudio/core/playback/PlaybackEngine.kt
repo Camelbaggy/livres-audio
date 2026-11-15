@@ -5,6 +5,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
@@ -18,6 +19,9 @@ import io.github.camelbaggy.livresaudio.core.model.DriveAuthProvider
 class PlaybackEngine(private val context: Context, auth: () -> DriveAuthProvider, val playbackCache: PlaybackCache) {
     private val httpClient = DriveDataSourceFactory.createHttpClient(auth)
 
+    /** Network load failures seen by the players' load policy (see [StreamHealth]). */
+    val loadFailures = LoadFailureSignal()
+
     /** Shared player of trial E2. The real service ([LivresAudioPlaybackService]) owns its own: [createPlayer]. */
     val player: ExoPlayer by lazy { createPlayer() }
 
@@ -27,7 +31,7 @@ class PlaybackEngine(private val context: Context, auth: () -> DriveAuthProvider
         // Constant-bitrate seeking: MP3 files without a Xing/VBRI header would otherwise not be seekable.
         val extractors = DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true)
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, extractors)
-            .setLoadErrorHandlingPolicy(DriveLoadErrorHandlingPolicy())
+            .setLoadErrorHandlingPolicy(DriveLoadErrorHandlingPolicy(loadFailures::report))
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
@@ -43,6 +47,13 @@ class PlaybackEngine(private val context: Context, auth: () -> DriveAuthProvider
             .setSeekBackIncrementMs(DEFAULT_SEEK_BACK_MS)
             .build()
     }
+
+    /**
+     * A cache-through data source factory on the same HTTP chain and cache as the players, for the pre-cacher
+     * ([CacheWriterSink]): same keys, same account handling, same token renewal.
+     */
+    fun createCacheDataSourceFactory(): CacheDataSource.Factory =
+        DriveDataSourceFactory.create(httpClient, playbackCache.cache)
 
     /** Media item for one Drive file; the explicit cache key matches [DriveDataSourceFactory.cacheKeyFactory]. */
     fun mediaItem(ref: DriveMediaRef, title: String): MediaItem = MediaItem.Builder()

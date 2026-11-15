@@ -26,9 +26,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -66,12 +69,24 @@ class LivresAudioPlaybackService : MediaLibraryService() {
     @Inject
     lateinit var settingsStore: ListeningSettingsStore
 
+    @Inject
+    lateinit var network: NetworkMonitor
+
+    @Inject
+    lateinit var streamHealth: StreamHealthHolder
+
     private lateinit var scope: CoroutineScope
     private var exoPlayer: ExoPlayer? = null
     private var session: MediaLibrarySession? = null
     private var keeper: PositionKeeper? = null
     private var rewindPlayer: ResumeRewindPlayer? = null
     private var speedSaver: SpeedOverrideSaver? = null
+    private var preCacher: PreCacher? = null
+    private var resumer: NetworkResumer? = null
+    private var healthJob: Job? = null
+
+    /** Second line of the notification while the stream has something to say (main thread only). */
+    private var statusLine: String? = null
 
     /** Live listening settings (player thread), read by the players and the speed logic. */
     private var settings: ListeningSettings = ListeningSettings()
@@ -86,6 +101,11 @@ class LivresAudioPlaybackService : MediaLibraryService() {
     private val playerListener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             keeper?.onIsPlayingChanged(isPlaying)
+            if (isPlaying) {
+                resumer?.onPlaying()
+                preCacher?.trigger()
+            }
+            refreshStreamHealth()
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -94,6 +114,12 @@ class LivresAudioPlaybackService : MediaLibraryService() {
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             keeper?.onPlaybackStateChanged()
+            if (playbackState == Player.STATE_READY) engine.loadFailures.clear()
+            refreshStreamHealth()
+        }
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            preCacher?.trigger()
         }
 
         override fun onPositionDiscontinuity(
@@ -102,10 +128,21 @@ class LivresAudioPlaybackService : MediaLibraryService() {
             reason: Int
         ) {
             keeper?.onPositionDiscontinuity(discontinuityKindOf(reason))
+            preCacher?.trigger()
         }
 
+        /**
+         * Order matters: the keeper saves the position FIRST (this listener was added to the player before
+         * any other that could act on the error), then the outage is recorded as a pause, then the resumer is armed.
+         */
         override fun onPlayerError(error: PlaybackException) {
             keeper?.onPlayerError()
+            val kind = PlayerErrors.kindOf(error)
+            if (kind == PlayerErrorKind.RECOVERABLE && exoPlayer?.playWhenReady == true) {
+                rewindPlayer?.markInterrupted()
+            }
+            resumer?.onPlayerError(kind)
+            refreshStreamHealth()
         }
     }
 
@@ -116,10 +153,12 @@ class LivresAudioPlaybackService : MediaLibraryService() {
         player.addListener(playerListener)
         exoPlayer = player
         speedSaver = SpeedOverrideSaver(progress, scope, writeDispatcher, System::currentTimeMillis)
+        setMediaNotificationProvider(StatusNotificationProvider(this) { statusLine })
         // Stack: ExoPlayer <- rewind on resume <- chapters/skips/headset buttons (what the session exposes).
         val rewinding = ResumeRewindPlayer(player, timeline = { timeline }, settings = { settings })
         rewindPlayer = rewinding
         val chapterPlayer = ChapterPlayer(rewinding, timeline = { timeline }, settings = { settings })
+        startStreaming(player, rewinding)
         scope.launch {
             settingsStore.settings.collect {
                 settings = it
@@ -143,6 +182,11 @@ class LivresAudioPlaybackService : MediaLibraryService() {
         // Before anything is released: the keeper reads the player.
         keeper?.flushBlocking(close = true)
         keeper = null
+        preCacher?.stop()
+        resumer?.stop()
+        preCacher = null
+        resumer = null
+        streamHealth.set(StreamHealth())
         scope.cancel()
         session?.release()
         session = null
@@ -158,6 +202,118 @@ class LivresAudioPlaybackService : MediaLibraryService() {
         timeline = null
         activeBook.set(null)
         super.onDestroy()
+    }
+
+    /** Pre-caching, automatic resume after a network failure, and the published stream state (CLAUDE.md §5.4). */
+    private fun startStreaming(player: ExoPlayer, rewinding: ResumeRewindPlayer) {
+        val cacher = PreCacher(
+            scope = scope,
+            sink = CacheWriterSink(engine.createCacheDataSourceFactory()),
+            network = network,
+            input = { preCacheInput(player) },
+            playerNeedsData = { player.playbackState == Player.STATE_BUFFERING },
+            isPlaying = { player.isPlaying }
+        )
+        cacher.start()
+        preCacher = cacher
+        val networkResumer = NetworkResumer(
+            scope = scope,
+            network = network,
+            target = object : ResumeTarget {
+                override val playWhenReady get() = player.playWhenReady
+                override val hasError get() = player.playerError != null
+                override val mediaId get() = player.currentMediaItem?.mediaId
+
+                // Through the rewinding player: prepare() + the rewind of the table + play().
+                override fun resume() = rewinding.play()
+            }
+        )
+        networkResumer.start()
+        resumer = networkResumer
+        scope.launch {
+            network.online.collect { online ->
+                if (online) cacher.trigger()
+                refreshStreamHealth()
+            }
+        }
+    }
+
+    /** Where the listening is, if the player holds the loaded book's playlist. */
+    private fun preCacheInput(player: Player): PreCacheInput? {
+        val active = activeBook.active.value ?: return null
+        val item = player.currentMediaItem ?: return null
+        if (BookPlaylist.bookIdOf(item.mediaId) != active.book.bookId) return null
+        if (player.mediaItemCount != active.book.files.size) return null
+        return PreCacheInput(active.book, player.currentMediaItemIndex, player.currentPosition)
+    }
+
+    /**
+     * Recomputes the published [StreamHealth] and the notification line. While the stream is stalled or failed, a
+     * ticker keeps re-evaluating it (the "recent failure" expires with time).
+     */
+    private fun refreshStreamHealth() {
+        val player = exoPlayer ?: return
+        val inputs = StreamInputs(
+            playbackState = player.playbackState,
+            playWhenReady = player.playWhenReady,
+            online = network.isOnlineNow(),
+            recentLoadFailure = engine.loadFailures.isRecent(),
+            error = PlayerErrors.kindOf(player.playerError)
+        )
+        val health = computeStreamHealth(inputs) { availableAudioMs(player) }
+        if (streamHealth.health.value != health) {
+            streamHealth.set(health)
+            updateStatusLine(health)
+        }
+        val needsTicker = inputs.playbackState == Player.STATE_BUFFERING || inputs.error != PlayerErrorKind.NONE
+        if (needsTicker && healthJob?.isActive != true) {
+            healthJob = scope.launch {
+                while (isActive) {
+                    delay(HEALTH_TICK_MS)
+                    refreshStreamHealth()
+                }
+            }
+        } else if (!needsTicker) {
+            healthJob?.cancel()
+            healthJob = null
+        }
+    }
+
+    /** Audio available from the position: the larger of the memory buffer and the contiguous disk cache. */
+    private fun availableAudioMs(player: Player): Long {
+        val buffered = player.totalBufferedDuration
+        val active = activeBook.active.value ?: return buffered
+        if (player.mediaItemCount != active.book.files.size) return buffered
+        val book = active.book
+        val cached = CacheAhead.availableMs(
+            book.files,
+            player.currentMediaItemIndex,
+            player.currentPosition
+        ) { index, start, max ->
+            val file = book.files[index]
+            val key = DriveMediaUri.cacheKey(DriveMediaRef(book.accountId, file.driveFileId, file.md5))
+            engine.playbackCache.cachedLength(key, start, max)
+        }
+        return maxOf(buffered, cached)
+    }
+
+    private fun updateStatusLine(health: StreamHealth) {
+        val line = when {
+            health.notFound -> getString(R.string.playback_status_not_found)
+
+            health.waitingForNetwork && health.availableMs != null -> getString(
+                R.string.playback_status_waiting_available,
+                formatAvailableAudio(health.availableMs)
+            )
+
+            health.waitingForNetwork -> getString(R.string.playback_status_waiting)
+
+            else -> null
+        }
+        if (line != statusLine) {
+            statusLine = line
+            triggerNotificationUpdate()
+        }
     }
 
     private fun launchIntent(): PendingIntent {
@@ -197,6 +353,7 @@ class LivresAudioPlaybackService : MediaLibraryService() {
         speedBookId = loaded.book.bookId
         speedOverride = loaded.speedOverride
         applySpeed()
+        preCacher?.trigger()
         // The pause being ended began at the book's last listening (also valid after more than 24 h).
         rewindPlayer?.tracker?.arm(loaded.lastPlayedAtMs)
         return MediaSession.MediaItemsWithStartPosition(loaded.items, loaded.target.fileIndex, loaded.target.positionMs)
@@ -344,5 +501,6 @@ class LivresAudioPlaybackService : MediaLibraryService() {
         /** Custom session command: "reset to zero" of the loaded book (explicit user action only). */
         const val COMMAND_RESET_POSITION = "io.github.camelbaggy.livresaudio.RESET_POSITION"
         private val RESET_POSITION_COMMAND = SessionCommand(COMMAND_RESET_POSITION, Bundle.EMPTY)
+        private const val HEALTH_TICK_MS = 2_000L
     }
 }

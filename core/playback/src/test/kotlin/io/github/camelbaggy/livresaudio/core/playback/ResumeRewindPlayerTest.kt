@@ -187,6 +187,69 @@ class ResumeRewindPlayerTest {
         exo.release()
     }
 
+    // ---- Network failure: the outage counts as a pause, and play() brings a failed player back ----
+
+    /** The real player, reporting a playback error and counting `prepare()` calls instead of running them. */
+    private class FailedPlayer(exo: ExoPlayer) : androidx.media3.common.ForwardingPlayer(exo) {
+        var prepared = 0
+
+        override fun getPlayerError() = androidx.media3.common.PlaybackException(
+            "réseau",
+            java.io.IOException(),
+            androidx.media3.common.PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED
+        )
+
+        override fun prepare() {
+            prepared++
+        }
+    }
+
+    @Test
+    fun `an outage counts as a pause and the automatic resume rewinds by the table, once`() {
+        val exo = exo()
+        val failed = FailedPlayer(exo)
+        val player = ResumeRewindPlayer(failed, { timeline }, { settings }, { now })
+        exo.seekTo(1, 120_000)
+        exo.playWhenReady = true
+        player.markInterrupted() // the service does this in onPlayerError
+        now += 3 * 60_000 // 3 min without network -> 10 s
+        player.play()
+        assertEquals(110_000L, exo.currentPosition)
+        assertEquals(1, failed.prepared)
+        assertTrue(exo.playWhenReady)
+        player.play()
+        assertEquals(110_000L, exo.currentPosition) // a second play() does not rewind again
+        exo.release()
+    }
+
+    @Test
+    fun `a short outage resumes in place`() {
+        val exo = exo()
+        val failed = FailedPlayer(exo)
+        val player = ResumeRewindPlayer(failed, { timeline }, { settings }, { now })
+        exo.seekTo(1, 120_000)
+        exo.playWhenReady = true
+        player.markInterrupted()
+        now += 3_000
+        player.play()
+        assertEquals(120_000L, exo.currentPosition)
+        assertEquals(1, failed.prepared)
+        exo.release()
+    }
+
+    @Test
+    fun `an outage longer than a day rewinds by the largest step only`() {
+        val exo = exo()
+        val player = ResumeRewindPlayer(FailedPlayer(exo), { timeline }, { settings }, { now })
+        exo.seekTo(2, 300_000)
+        exo.playWhenReady = true
+        player.markInterrupted()
+        now += 30 * 3_600_000L
+        player.play()
+        assertEquals(240_000L, exo.currentPosition) // 60 s, never more than the table's maximum
+        exo.release()
+    }
+
     // ---- Interaction with PositionKeeper (unchanged): the rewind is a SEEK ----
 
     private class KeeperSetup(val keeper: PositionKeeper, val player: FakePlayer, val repo: FakeProgressRepository)

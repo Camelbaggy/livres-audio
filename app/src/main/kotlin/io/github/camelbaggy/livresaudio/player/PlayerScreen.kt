@@ -113,7 +113,7 @@ fun PlayerScreen(viewModel: PlayerViewModel, onBack: () -> Unit, modifier: Modif
                     ChapterSeekBar(state = state, onSeek = viewModel::seekToChapterFraction)
                     Text(
                         text = listOfNotNull(
-                            statusLabel(state.status),
+                            statusLabel(state.status, state.availableMs),
                             state.remainingBookMs?.let { stringResource(R.string.player_remaining, formatDuration(it)) }
                         ).joinToString(" · "),
                         style = MaterialTheme.typography.bodyMedium,

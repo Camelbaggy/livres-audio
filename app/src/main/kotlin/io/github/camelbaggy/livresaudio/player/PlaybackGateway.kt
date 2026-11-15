@@ -15,7 +15,13 @@ data class ControllerState(
     val speed: Float = 1f,
     /** Short description of a player error, null when none. */
     val error: String? = null,
-    val online: Boolean = true
+    val online: Boolean = true,
+    /** From the service ([io.github.camelbaggy.livresaudio.core.playback.StreamHealth]): stalled/failed for lack of network. */
+    val waitingForNetwork: Boolean = false,
+    /** From the service: the file is gone from Drive (HTTP 404). */
+    val notFound: Boolean = false,
+    /** Audio still available while [waitingForNetwork] (memory buffer + disk cache); null otherwise. */
+    val availableMs: Long? = null
 )
 
 /** Playback commands of the UI. Implemented over the `MediaController` ([MediaControllerHolder]). */

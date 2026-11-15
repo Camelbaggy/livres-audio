@@ -17,13 +17,19 @@ import java.io.IOException
  * that many failures, so the player stays in "buffering" while the loader keeps retrying.
  */
 @UnstableApi
-class DriveLoadErrorHandlingPolicy : DefaultLoadErrorHandlingPolicy() {
-    override fun getRetryDelayMsFor(loadErrorInfo: LoadErrorInfo): Long =
-        when (val decision = LoadRetryRules.decide(classify(loadErrorInfo.exception), loadErrorInfo.errorCount)) {
+class DriveLoadErrorHandlingPolicy(
+    /** Told of every load failure (ExoPlayer's loading thread): feeds the "waiting for the network" state. */
+    private val onFailure: (LoadFailure) -> Unit = {}
+) : DefaultLoadErrorHandlingPolicy() {
+    override fun getRetryDelayMsFor(loadErrorInfo: LoadErrorInfo): Long {
+        val failure = classify(loadErrorInfo.exception)
+        onFailure(failure)
+        return when (val decision = LoadRetryRules.decide(failure, loadErrorInfo.errorCount)) {
             is RetryDecision.RetryAfter -> decision.delayMs
             RetryDecision.Fatal -> C.TIME_UNSET
             RetryDecision.UseDefault -> super.getRetryDelayMsFor(loadErrorInfo)
         }
+    }
 
     override fun getMinimumLoadableRetryCount(dataType: Int): Int = Int.MAX_VALUE
 

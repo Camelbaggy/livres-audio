@@ -8,7 +8,9 @@ data class PlaybackFile(
     val md5: String?,
     /** Unknown until the file is probed (CLAUDE.md §5.2). */
     val durationMs: Long?,
-    val name: String
+    val name: String,
+    /** Size in bytes, null/0 when unknown; used to convert audio time to bytes for pre-caching. */
+    val sizeBytes: Long? = null
 )
 
 /** A chapter marker, positioned inside one file. [endMs] null = up to the end of the file. */
@@ -54,7 +56,18 @@ fun BookWithFiles.toPlaybackBook(): PlaybackBook {
         title = book.title,
         author = book.author,
         coverUri = book.coverUri,
-        files = ordered.map { PlaybackFile(it.driveFileId, it.md5, it.durationMs, it.name) },
+        files = ordered.map {
+            PlaybackFile(
+                it.driveFileId,
+                it.md5,
+                it.durationMs,
+                it.name,
+                it.sizeBytes.takeIf { size ->
+                    size >
+                        0
+                }
+            )
+        },
         embeddedChapters = chapterList
     )
 }

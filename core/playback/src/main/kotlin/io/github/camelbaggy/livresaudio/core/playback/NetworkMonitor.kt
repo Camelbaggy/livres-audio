@@ -9,17 +9,30 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+/** What the playback logic needs to know of the network (an interface so it can be faked in tests). */
+interface NetworkStatus {
+    /** Emits the current value first, then every change (distinct). */
+    val online: Flow<Boolean>
+
+    fun isOnlineNow(): Boolean
+
+    /** True on a metered connection (mobile data): pre-caching is reduced there. */
+    fun isMeteredNow(): Boolean
+}
+
 /** Whether the device has a usable (validated) network, as a flow. */
-class NetworkMonitor(context: Context) {
+class NetworkMonitor(context: Context) : NetworkStatus {
     private val manager = context.getSystemService(ConnectivityManager::class.java)
 
-    fun isOnlineNow(): Boolean {
+    override fun isMeteredNow(): Boolean = manager.isActiveNetworkMetered
+
+    override fun isOnlineNow(): Boolean {
         val capabilities = manager.getNetworkCapabilities(manager.activeNetwork) ?: return false
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
-    val online: Flow<Boolean> = callbackFlow {
+    override val online: Flow<Boolean> = callbackFlow {
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 trySend(isOnlineNow())

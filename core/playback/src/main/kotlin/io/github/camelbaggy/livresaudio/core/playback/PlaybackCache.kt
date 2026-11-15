@@ -20,6 +20,10 @@ class PlaybackCache(context: Context, maxBytes: Long = DEFAULT_MAX_BYTES) {
     /** Bytes cached for one file (`C.LENGTH_UNSET` = to the end of the resource). */
     fun cachedBytes(key: String): Long = cache.getCachedBytes(key, 0, C.LENGTH_UNSET.toLong())
 
+    /** Contiguous cached bytes of [key] from [startByte], at most [maxBytes] (`Cache.getCachedLength` semantics). */
+    fun cachedLength(key: String, startByte: Long, maxBytes: Long): Long =
+        cache.getCachedLength(key, startByte, maxBytes).coerceAtLeast(0)
+
     fun totalBytes(): Long = cache.cacheSpace
 
     /** Removes everything. The caller must have stopped playback first. */

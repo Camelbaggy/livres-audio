@@ -182,6 +182,7 @@
     <string name="player_status_paused">En pause</string>
     <string name="player_status_loading">Chargement…</string>
     <string name="player_status_waiting">En attente du réseau…</string>
+    <string name="player_status_waiting_available">En attente du réseau… — %1$s disponibles</string>
     <string name="player_status_not_found">Fichier introuvable</string>
     <string name="player_status_error">Erreur de lecture</string>
     <string name="player_status_ended">Terminé</string>
