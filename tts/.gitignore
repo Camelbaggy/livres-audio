@@ -5,3 +5,6 @@ __pycache__/
 .ruff_cache/
 bench-out/
 projets/
+registre-depenses.bak
+registre-depenses.tmp
+registre-depenses.lock
