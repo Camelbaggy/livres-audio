@@ -67,6 +67,7 @@ def _prepare(args: argparse.Namespace) -> int:
         keep_notes=args.garder_notes,
         chapter_level=args.niveau_chapitres,
         remove_dedications=args.retirer_dedicaces,
+        exclude=[x for x in (args.exclure or "").split(",") if x.strip()],
     )
     try:
         result = prepare(
@@ -146,6 +147,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="niveau de la table des matières qui donne les chapitres (défaut : automatique)",
     )
     pr.add_argument("--retirer-dedicaces", action="store_true", help="ne pas lire les dédicaces")
+    pr.add_argument(
+        "--exclure",
+        help="chapitres à ne pas lire : numéros ou extraits de titre séparés par des virgules "
+        "(ex. « glossaire,notes de l'auteur »)",
+    )
     pr.set_defaults(func=_prepare)
 
     e = sub.add_parser("moteurs", help="lister les moteurs et leur disponibilité")

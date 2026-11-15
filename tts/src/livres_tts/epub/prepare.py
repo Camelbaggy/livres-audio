@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
 import re
 import shutil
+import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -28,6 +30,9 @@ class PrepareOptions:
     keep_notes: bool = False
     chapter_level: int | None = None
     remove_dedications: bool = False
+    # Chapitres à ne pas lire : numéros (1 = premier chapitre produit) ou extraits de titre
+    # (sans casse ni accents), par ex. glossaire, notes de l'auteur.
+    exclude: list[str] = field(default_factory=list)
     normalize: NormalizeOptions = field(default_factory=NormalizeOptions)
 
 
@@ -86,6 +91,24 @@ def _slug(text: str) -> str:
     return text or "livre"
 
 
+def _fold(text: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if not unicodedata.combining(c)).casefold()
+
+
+def select_excluded(chapters: list[Chapter], specs: list[str]) -> list[Chapter]:
+    """Chapitres désignés par numéro (position, à partir de 1) ou par extrait de titre."""
+    chosen: list[Chapter] = []
+    for spec in (s.strip() for s in specs):
+        if not spec:
+            continue
+        for position, ch in enumerate(chapters, start=1):
+            hit = position == int(spec) if spec.isdigit() else _fold(spec) in _fold(ch.title)
+            if hit and ch not in chosen:
+                chosen.append(ch)
+    return chosen
+
+
 def prepare(
     epub_path: Path,
     out_dir: Path | None = None,
@@ -114,6 +137,11 @@ def prepare(
     if not chaptering.chapters:
         warnings.append("aucun chapitre produit")
 
+    excluded = select_excluded(chaptering.chapters, options.exclude)
+    for ch in excluded:
+        warnings.append(f"chapitre exclu à la demande : {ch.index:02d} - {ch.title}")
+    kept = [ch for ch in chaptering.chapters if ch not in excluded]
+
     # Retraits : attribution à un chapitre
     index_of = {d.path: i for i, d in enumerate(results)}
     removals = [r for res in results for r in res.removals] + chaptering.removals
@@ -127,11 +155,12 @@ def prepare(
     (out_dir / "chapitres").mkdir(parents=True, exist_ok=True)
     (out_dir / "chapitres-bruts").mkdir(parents=True, exist_ok=True)
 
-    width = max(2, len(str(len(chaptering.chapters))))
+    width = max(2, len(str(len(kept))))
     entries: list[dict] = []
     samples: dict[int, list[tuple[str, str]]] = {}
     total_chars = 0
-    for ch in chaptering.chapters:
+    for number, ch in enumerate(kept, start=1):
+        ch = dataclasses.replace(ch, index=number)
         raw_lines, final_lines = chapter_lines(ch, options.normalize)
         name = f"{ch.index:0{width}d} - {safe_filename(ch.title)}.txt"
         (out_dir / "chapitres" / name).write_text("\n".join(final_lines) + "\n", "utf-8")
@@ -164,6 +193,7 @@ def prepare(
         "garder_notes": options.keep_notes,
         "niveau_chapitres": options.chapter_level if options.chapter_level else "auto",
         "retirer_dedicaces": options.remove_dedications,
+        "exclure": list(options.exclude),
     }
     project = {
         "schemaVersion": SCHEMA_VERSION,
@@ -206,8 +236,11 @@ def prepare(
             total_chars=total_chars,
             total_seconds=total_seconds,
             level=chaptering.level,
-            chapter_source={"toc": "table des matières", "titres": "titres du texte",
-                            "documents": "un chapitre par document"}[chaptering.source],
+            chapter_source={
+                "toc": "table des matières",
+                "titres": "titres du texte",
+                "documents": "un chapitre par document",
+            }[chaptering.source],
             options=opts_dict,
         ),
         "utf-8",
