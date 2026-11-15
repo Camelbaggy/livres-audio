@@ -518,7 +518,7 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | 5 Hors ligne et confort | À faire | — |
 | 6 Voiture et finitions | À faire | — |
 | T0 Banc d'essai TTS | Terminé | Voix retenue : **Google Chirp 3 HD « Aoede »** (fr-FR), dans le palier gratuit mensuel |
-| T1 Préparation EPUB | En cours | — |
+| T1 Préparation EPUB | En cours | `tts prepare` fait ; tome 1 préparé (14 chapitres, ≈ 763 000 car., ≈ 14 h) ; relecture de 3 chapitres par l'utilisateur attendue |
 | T2–T4 | À faire | — |
 
 ### Points [À VÉRIFIER] — résultats
@@ -548,4 +548,5 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | 2026-11-14 | Couverture d'image du dossier : `coverUri = drive-image://<accountId>/<driveFileId>`, provenance `FOLDER` (jamais devant `EMBEDDED`/`USER`) ; affichée par un `Fetcher` Coil 3 authentifié avec cache disque Coil (4 Mo max) | Couvertures `cover.jpg` visibles, y compris hors ligne après un premier affichage |
 | 2026-11-14 | Banc T0, voix gratuites (notes naturel/rythme/dialogues/noms propres/fatigue sur 5) : **Edge Vivienne Multilingual 4/4/2/5/4** (glisse vers un accent espagnol sur l'occitan et anglais sur une réplique : défaut connu des voix « Multilingual » qui changent de langue seules) ; **Edge Denise 3/3/4/5/3** (occitan mieux géré, pas d'accent parasite). Rejetées (trop robotiques) : Edge Rémy Multilingual et Henri, Piper (siwis, tom, upmc), Kokoro. Meilleure gratuite en confort longue durée : 4/5 → une voix payante devrait atteindre 5/5 en fatigue pour être retenue (règle « +1 point ») | Notation à l'aveugle de l'utilisateur |
 | 2026-11-15 | **Voix retenue (fin du lot T0) : Google Chirp 3 HD `fr-FR-Chirp3-HD-Aoede`**, préférée à l'aveugle aux voix Edge (Vivienne, Denise) et aux autres Chirp 3 HD (Kore, Charon, Orus). Défaut constaté : certains mots occitans sont épelés au lieu d'être prononcés → à corriger par le lexique de prononciation (réécriture phonétique, lot T2). **Coût** : ≈ 25,8 €/M caractères hors palier, donc au-delà du plafond de 5–10 € par tome ; on reste **dans le palier gratuit d'environ 1 M caractères par mois**, soit environ un tome par mois à 0 €. `build` doit refuser de dépasser le palier gratuit restant du mois sauf accord explicite | Banc d'essai n°2 (4 voix Chirp 3 HD + 2 voix Edge témoins, à l'aveugle) |
+| 2026-11-15 | Livres TTS : **seul le récit est lu** — glossaire occitan et notes de l'auteur exclus (`tts prepare --exclure`) ; chapitres du livre conservés tels quels (60 à 90 min) | Décision de l'utilisateur |
 | 2026-11-14 | CLI TTS en `argparse` (pas de dépendance) ; moteurs lourds en extras `uv` optionnels | Installation de base légère |
