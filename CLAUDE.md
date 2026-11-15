@@ -517,8 +517,9 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | 4 Usage à deux | À faire | — |
 | 5 Hors ligne et confort | À faire | — |
 | 6 Voiture et finitions | À faire | — |
-| T0 Banc d'essai TTS | En cours | Voix gratuites notées (2026-11-14) : seules deux voix Edge sont jugées potables ; prochaine étape : essai de Google Chirp 3 HD (palier gratuit) sur l'extrait, puis décision |
-| T1–T4 | À faire | — |
+| T0 Banc d'essai TTS | Terminé | Voix retenue : **Google Chirp 3 HD « Aoede »** (fr-FR), dans le palier gratuit mensuel |
+| T1 Préparation EPUB | En cours | — |
+| T2–T4 | À faire | — |
 
 ### Points [À VÉRIFIER] — résultats
 
@@ -546,4 +547,5 @@ Variables de signature attendues (jamais dans le dépôt) : `LA_KEYSTORE_FILE`, 
 | 2026-11-14 | Comptes (tâche 1.2) : **Room (`accounts`) est la seule source de vérité** ; `AccountStore` (interface de `core:drive`) est implémentée par `RoomAccountStore` au-dessus d'`AccountRepository` ; `AccountLinker` supprimé. Les comptes de l'ancien DataStore (essai E1) sont recopiés **une fois** vers Room par `AccountMigration` avec les **mêmes `AccountId`** (additif, jamais d'écrasement, drapeau « migré », ancien DataStore laissé intact). Retirer un compte (confirmation explicite) supprime ses racines (cascade) et passe ses livres à `MISSING` dans la même transaction ; `progress` et `bookmarks` ne sont jamais touchés. `DriveAuthProvider.reconnectAccount` refait le consentement du même compte (y compris le compte commun) sans sélecteur | Une seule liste de comptes ; ne jamais perdre racines, livres ni positions lors de l'unification |
 | 2026-11-14 | Couverture d'image du dossier : `coverUri = drive-image://<accountId>/<driveFileId>`, provenance `FOLDER` (jamais devant `EMBEDDED`/`USER`) ; affichée par un `Fetcher` Coil 3 authentifié avec cache disque Coil (4 Mo max) | Couvertures `cover.jpg` visibles, y compris hors ligne après un premier affichage |
 | 2026-11-14 | Banc T0, voix gratuites (notes naturel/rythme/dialogues/noms propres/fatigue sur 5) : **Edge Vivienne Multilingual 4/4/2/5/4** (glisse vers un accent espagnol sur l'occitan et anglais sur une réplique : défaut connu des voix « Multilingual » qui changent de langue seules) ; **Edge Denise 3/3/4/5/3** (occitan mieux géré, pas d'accent parasite). Rejetées (trop robotiques) : Edge Rémy Multilingual et Henri, Piper (siwis, tom, upmc), Kokoro. Meilleure gratuite en confort longue durée : 4/5 → une voix payante devrait atteindre 5/5 en fatigue pour être retenue (règle « +1 point ») | Notation à l'aveugle de l'utilisateur |
+| 2026-11-15 | **Voix retenue (fin du lot T0) : Google Chirp 3 HD `fr-FR-Chirp3-HD-Aoede`**, préférée à l'aveugle aux voix Edge (Vivienne, Denise) et aux autres Chirp 3 HD (Kore, Charon, Orus). Défaut constaté : certains mots occitans sont épelés au lieu d'être prononcés → à corriger par le lexique de prononciation (réécriture phonétique, lot T2). **Coût** : ≈ 25,8 €/M caractères hors palier, donc au-delà du plafond de 5–10 € par tome ; on reste **dans le palier gratuit d'environ 1 M caractères par mois**, soit environ un tome par mois à 0 €. `build` doit refuser de dépasser le palier gratuit restant du mois sauf accord explicite | Banc d'essai n°2 (4 voix Chirp 3 HD + 2 voix Edge témoins, à l'aveugle) |
 | 2026-11-14 | CLI TTS en `argparse` (pas de dépendance) ; moteurs lourds en extras `uv` optionnels | Installation de base légère |
