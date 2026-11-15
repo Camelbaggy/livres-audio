@@ -176,7 +176,8 @@ class RoomLibraryRepository @Inject constructor(
                 durationMs = kept?.durationMs,
                 trackNumber = kept?.trackNumber,
                 discNumber = kept?.discNumber,
-                probed = kept?.probed == true
+                probed = kept?.probed == true,
+                tagsProbed = kept?.tagsProbed == true
             )
         }
     }

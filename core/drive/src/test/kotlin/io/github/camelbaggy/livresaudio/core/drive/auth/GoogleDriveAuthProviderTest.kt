@@ -14,6 +14,8 @@ import io.github.camelbaggy.livresaudio.core.model.ConnectedAccount
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
@@ -63,7 +65,8 @@ class GoogleDriveAuthProviderTest {
     private val store = MemoryStore()
     private val gateway = FakeGateway(GatewayResult.Granted(AccessToken("t1", null)))
     private var about: DriveResult<DriveUser> = DriveResult.Success(DriveUser("Nom", "Réel@Example.test"))
-    private val provider = GoogleDriveAuthProvider(store, gateway) { about }
+    private var now = 1_000_000L
+    private val provider = GoogleDriveAuthProvider(store, gateway, clock = { now }) { about }
 
     @Test
     fun addAccountStoresAddressReturnedByAbout() = runTest {
@@ -152,6 +155,76 @@ class GoogleDriveAuthProviderTest {
 
         assertEquals(listOf("t1"), gateway.cleared)
         assertEquals("t2", assertIs<AuthResult.Success<AccessToken>>(result).value.value)
+    }
+
+    @Test
+    fun aHundredCallsMakeOneAuthorize() = runTest {
+        val account = store.upsert("moi@example.test", null, AccountRole.PERSONAL)
+
+        repeat(100) {
+            val result = provider.getAccessToken(account.id)
+            assertEquals("t1", assertIs<AuthResult.Success<AccessToken>>(result).value.value)
+        }
+
+        assertEquals(1, gateway.authorized.size)
+    }
+
+    @Test
+    fun concurrentCallsShareOneAuthorize() = runTest {
+        val account = store.upsert("moi@example.test", null, AccountRole.PERSONAL)
+
+        List(50) { async { provider.getAccessToken(account.id) } }.awaitAll()
+
+        assertEquals(1, gateway.authorized.size)
+    }
+
+    @Test
+    fun tokenIsRenewedAfterFortyFiveMinutes() = runTest {
+        val account = store.upsert("moi@example.test", null, AccountRole.PERSONAL)
+        provider.getAccessToken(account.id)
+
+        now += 44 * 60_000L
+        provider.getAccessToken(account.id)
+        assertEquals(1, gateway.authorized.size)
+
+        gateway.result = GatewayResult.Granted(AccessToken("t2", null))
+        now += 2 * 60_000L // 46 min after the first token
+        val result = provider.getAccessToken(account.id)
+
+        assertEquals(2, gateway.authorized.size)
+        assertEquals("t2", assertIs<AuthResult.Success<AccessToken>>(result).value.value)
+        // The new token has its own 45 minutes.
+        now += 44 * 60_000L
+        provider.getAccessToken(account.id)
+        assertEquals(2, gateway.authorized.size)
+    }
+
+    @Test
+    fun cacheIsPerAccountAndForgottenWhenRemovedOrReconnected() = runTest {
+        val a = store.upsert("a@example.test", null, AccountRole.SHARED)
+        val b = store.upsert("b@example.test", null, AccountRole.PERSONAL)
+        provider.getAccessToken(a.id)
+        provider.getAccessToken(b.id)
+        assertEquals(listOf("a@example.test", "b@example.test"), gateway.authorized.map { it.first })
+
+        provider.removeAccount(a.id)
+        store.upsert("a@example.test", null, AccountRole.SHARED)
+        val again = store.list().first { it.email == "a@example.test" }
+        provider.getAccessToken(again.id)
+        assertEquals(3, gateway.authorized.size)
+    }
+
+    @Test
+    fun failedForceRefreshDoesNotLeaveTheInvalidatedTokenInCache() = runTest {
+        val account = store.upsert("moi@example.test", null, AccountRole.PERSONAL)
+        provider.getAccessToken(account.id)
+        gateway.result = GatewayResult.NetworkUnavailable
+        assertEquals(AuthResult.NetworkUnavailable, provider.getAccessToken(account.id, forceRefresh = true))
+
+        gateway.result = GatewayResult.Granted(AccessToken("t3", null))
+        val result = provider.getAccessToken(account.id)
+
+        assertEquals("t3", assertIs<AuthResult.Success<AccessToken>>(result).value.value)
     }
 
     @Test

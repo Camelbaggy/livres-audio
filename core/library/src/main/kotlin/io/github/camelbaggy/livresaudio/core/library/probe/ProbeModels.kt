@@ -42,3 +42,9 @@ data class ProbeResult(
         val EMPTY = ProbeResult(ProbeFormat.OTHER, null, AudioTags(), emptyList())
     }
 }
+
+/** Optional capability of a [io.github.camelbaggy.livresaudio.core.model.ByteRangeSource]: what it cost on the wire. */
+interface TransferStats {
+    val requestCount: Int
+    val bytesFetched: Long
+}

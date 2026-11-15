@@ -20,7 +20,7 @@ import androidx.room.TypeConverters
         MatchCandidateEntity::class,
         SyncStateEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

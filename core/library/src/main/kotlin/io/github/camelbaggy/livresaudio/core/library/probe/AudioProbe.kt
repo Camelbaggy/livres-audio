@@ -21,8 +21,13 @@ class AudioProbe(
     private val tagBudgetBytes: Long = DEFAULT_TAG_BUDGET,
     private val chapterBudgetBytes: Long = DEFAULT_CHAPTER_BUDGET
 ) {
+    /**
+     * [withChapters] false = "light" probe (phase 1 of the runner): tags, header duration and the position of
+     * the cover only. The chapter extractors read the whole `moov` of an M4B (several MiB of sample tables), so
+     * they are skipped; [ProbeResult.chapters] is then empty. The light probe never reads a `trak` or an `stbl`.
+     */
     @Throws(IOException::class)
-    suspend fun probe(source: ByteRangeSource, mimeType: String?): ProbeResult {
+    suspend fun probe(source: ByteRangeSource, mimeType: String?, withChapters: Boolean = true): ProbeResult {
         val tagSource = BudgetedSource(source, tagBudgetBytes, MAX_READS)
         val format = try {
             detect(tagSource.readFully(0, DETECT_BYTES), mimeType)
@@ -54,6 +59,7 @@ class AudioProbe(
             // defensive: corrupt data must never crash the probe
         }
         tagSource.ioFailure?.let { throw it }
+        if (!withChapters) return ProbeResult(format, duration, tags, emptyList())
 
         val budgeted = BudgetedSource(source, chapterBudgetBytes, MAX_READS)
         val cover = tags.cover

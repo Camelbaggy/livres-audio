@@ -1,0 +1,22 @@
+# Lexique de la série « Fortune de France » (hérite de global.yaml).
+# ATTENTION : entrées d'EXEMPLE inventées, pour montrer le format. À remplacer après écoute.
+# Écrire la réécriture comme on la prononcerait en français courant ; la plus longue
+# occurrence gagne (« Mespech-le-Haut » avant « Mespech »).
+
+- mot: Exemplium
+  dire: Exemplioum
+  commentaire: exemple inventé, mot exact sensible à la casse
+
+- mot: exemplium
+  dire: exemplioum
+  casse: false
+  commentaire: exemple inventé, insensible à la casse
+
+- regex: 'Maître (\w+)'
+  dire: 'Maitre \1'
+  commentaire: exemple inventé d'expression régulière avec référence arrière
+
+- mot: Exemple-le-Haut
+  dire: Exemple le Haut
+  ipa: ɛɡzɑ̃plə
+  commentaire: exemple inventé ; « ipa » ignoré tant que le moteur ne l'accepte pas

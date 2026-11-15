@@ -86,7 +86,7 @@ fun progressEntity(
 
 fun row(book: BookEntity, progress: ProgressEntity? = null) = BookWithProgress(book, progress)
 
-fun bookFile(bookId: String, index: Int, durationMs: Long? = 60_000) = BookFileEntity(
+fun bookFile(bookId: String, index: Int, durationMs: Long? = 60_000, probed: Boolean = true) = BookFileEntity(
     id = index + 1L,
     bookId = bookId,
     driveFileId = "$bookId-file$index",
@@ -98,7 +98,8 @@ fun bookFile(bookId: String, index: Int, durationMs: Long? = 60_000) = BookFileE
     durationMs = durationMs,
     trackNumber = null,
     discNumber = null,
-    probed = true
+    probed = probed,
+    tagsProbed = probed
 )
 
 class FakeLibraryRepository : LibraryRepository {

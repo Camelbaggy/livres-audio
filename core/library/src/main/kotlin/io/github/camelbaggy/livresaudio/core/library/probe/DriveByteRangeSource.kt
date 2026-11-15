@@ -76,14 +76,19 @@ class DriveByteRangeSource(
     private val baseUrl: HttpUrl = DRIVE_BASE_URL.toHttpUrl(),
     private val blockSize: Int = DEFAULT_BLOCK_SIZE,
     private val maxCachedBlocks: Int = DEFAULT_CACHED_BLOCKS
-) : ByteRangeSource {
+) : ByteRangeSource,
+    TransferStats {
     private val mutex = Mutex()
     private val cache = object : LinkedHashMap<Long, ByteArray>(16, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, ByteArray>?) = size > maxCachedBlocks
     }
 
     /** Number of HTTP requests made (diagnostics, tests). */
-    var requestCount = 0
+    override var requestCount = 0
+        private set
+
+    /** Bytes received over HTTP (diagnostics, tests). */
+    override var bytesFetched = 0L
         private set
 
     override suspend fun size(): Long? = sizeBytes
@@ -151,7 +156,7 @@ class DriveByteRangeSource(
             .build()
         requestCount++
         val response = execute(request)
-        return response.use { read(it, start, (stop - start)) }
+        return response.use { read(it, start, (stop - start)) }.also { bytesFetched += it.size }
     }
 
     private fun read(response: Response, start: Long, want: Long): ByteArray = try {

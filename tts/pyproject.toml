@@ -5,9 +5,13 @@ description = "Atelier de synthèse vocale : EPUB sans DRM vers livre audio (usa
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "ebooklib>=0.21",
     "edge-tts>=7.0",
     "httpx>=0.27",
+    "lxml>=6.1.3",
     "piper-tts>=1.3",
+    "pyyaml>=6.0.3",
 ]
 
 [project.optional-dependencies]
@@ -41,3 +45,6 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]

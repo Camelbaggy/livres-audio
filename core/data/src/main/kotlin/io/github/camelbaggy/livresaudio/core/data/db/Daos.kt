@@ -127,10 +127,17 @@ interface BookFileDao {
     suspend fun delete(ids: List<Long>)
 
     @Query(
-        "UPDATE book_files SET durationMs = :durationMs, trackNumber = :track, discNumber = :disc, probed = 1 " +
-            "WHERE id = :id"
+        "UPDATE book_files SET durationMs = :durationMs, trackNumber = :track, discNumber = :disc, probed = 1, " +
+            "tagsProbed = 1 WHERE id = :id"
     )
     suspend fun setProbed(id: Long, durationMs: Long?, track: Int?, disc: Int?)
+
+    /** Phase 1 of the probe: tags and header duration known, chapters not yet read (`probed` stays as is). */
+    @Query(
+        "UPDATE book_files SET durationMs = :durationMs, trackNumber = :track, discNumber = :disc, tagsProbed = 1 " +
+            "WHERE id = :id"
+    )
+    suspend fun setTagsProbed(id: Long, durationMs: Long?, track: Int?, disc: Int?)
 }
 
 @Dao
@@ -143,6 +150,9 @@ interface ChapterDao {
 
     @Query("DELETE FROM chapters WHERE bookId = :bookId")
     suspend fun deleteForBook(bookId: String)
+
+    @Query("UPDATE chapters SET indexInBook = :indexInBook WHERE id = :id")
+    suspend fun setIndex(id: Long, indexInBook: Int)
 
     @Query("DELETE FROM chapters WHERE fileId IN (:fileIds)")
     suspend fun deleteForFiles(fileIds: List<Long>)

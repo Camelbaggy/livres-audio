@@ -31,6 +31,8 @@ class GoogleEngine(HttpEngine):
     env_var = "GOOGLE_TTS_API_KEY"
     price_per_million_chars = eur_per_million(30.0)  # Chirp 3 HD
     max_chars = 2000
+    free_chars_per_month = 1_000_000  # palier gratuit Chirp 3 HD (page tarifs, relevé 2026-11-14)
+    supports_ipa = False  # [À VÉRIFIER] SSML/IPA avec Chirp 3 HD : non confirmé, `dire` seul
     default_voice = "fr-FR-Chirp3-HD-Charon"
     description = "Google Cloud Chirp 3 HD (en ligne, 1 M car. gratuits/mois)"
 
