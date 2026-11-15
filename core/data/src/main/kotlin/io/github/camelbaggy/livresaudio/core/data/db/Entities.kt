@@ -1,5 +1,6 @@
 package io.github.camelbaggy.livresaudio.core.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -112,7 +113,10 @@ data class BookFileEntity(
     val durationMs: Long?,
     val trackNumber: Int?,
     val discNumber: Int?,
-    val probed: Boolean
+    /** Fully probed: duration, track/disc and embedded chapters (phase 2 of the probe). */
+    val probed: Boolean,
+    /** Tags, cover and header duration read (phase 1 of the probe); implied by [probed]. Added in schema v2. */
+    @ColumnInfo(defaultValue = "0") val tagsProbed: Boolean = false
 )
 
 @Entity(

@@ -1,6 +1,8 @@
 package io.github.camelbaggy.livresaudio.core.library.probe
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,6 +33,29 @@ object ProbeModule {
         RoomProbeStore(db, dispatcher)
 
     @Provides
-    fun probeRunner(store: ProbeStore, sources: ProbeSourceFactory, covers: CoverStore): ProbeRunner =
-        ProbeRunner(store, sources, AudioProbe(), covers)
+    fun probeRunner(
+        @ApplicationContext context: Context,
+        store: ProbeStore,
+        sources: ProbeSourceFactory,
+        covers: CoverStore
+    ): ProbeRunner = ProbeRunner(
+        store,
+        sources,
+        AudioProbe(),
+        covers,
+        networkAvailable = { hasNetwork(context) },
+        detailsAllowed = { isUnmetered(context) }
+    )
+
+    private fun isUnmetered(context: Context): Boolean {
+        val manager = context.getSystemService(ConnectivityManager::class.java) ?: return false
+        val capabilities = manager.getNetworkCapabilities(manager.activeNetwork ?: return false) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+    }
+
+    private fun hasNetwork(context: Context): Boolean {
+        val manager = context.getSystemService(ConnectivityManager::class.java) ?: return true
+        val capabilities = manager.getNetworkCapabilities(manager.activeNetwork ?: return false) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
 }

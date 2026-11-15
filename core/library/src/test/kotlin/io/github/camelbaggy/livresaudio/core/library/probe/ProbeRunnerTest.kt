@@ -37,6 +37,7 @@ import org.robolectric.RobolectricTestRunner
 private class FakeSources(private val files: MutableMap<String, ByteArray> = mutableMapOf()) : ProbeSourceFactory {
     val failures = mutableMapOf<String, DriveError>()
     val opened = mutableListOf<String>()
+    var onOpen: (String) -> Unit = {}
 
     fun put(driveFileId: String, bytes: ByteArray) {
         files[driveFileId] = bytes
@@ -44,6 +45,7 @@ private class FakeSources(private val files: MutableMap<String, ByteArray> = mut
 
     override fun open(accountId: String, driveFileId: String, sizeBytes: Long?): ByteRangeSource {
         opened += driveFileId
+        onOpen(driveFileId)
         val error = failures[driveFileId]
         if (error != null) {
             return object : ByteRangeSource {
@@ -225,7 +227,7 @@ class ProbeRunnerTest {
     }
 
     @Test
-    fun erreurReseauLaisseToutNonSondeEtDemandeUnNouvelEssai() = runTest {
+    fun uneErreurReseauSurUnFichierGardeLeResteEtDemandeUnNouvelEssai() = runTest {
         val id = addBook("F2", item("a", "a.mp3"), item("b", "b.mp3"))
         sources.put("a", probeResource("piste1.mp3"))
         sources.failures["b"] = DriveError.NetworkUnavailable
@@ -233,10 +235,13 @@ class ProbeRunnerTest {
         val report = runner.run()
 
         assertTrue(report.retryLater)
-        assertEquals(0, report.booksProbed)
+        assertTrue(report.hasRemainingWork)
+        assertEquals(1, report.booksProbed) // la vitrine (premier fichier) est posée
+        assertEquals(1, report.filesProbed)
         val b = assertNotNull(library.getBook(id))
-        assertTrue(b.files.none { it.probed }, "rien n'est enregistré à moitié")
-        assertEquals("Titre du dossier", b.book.title)
+        assertTrue(b.files.first { it.driveFileId == "a" }.probed)
+        assertFalse(b.files.first { it.driveFileId == "b" }.probed, "le fichier en erreur reste à sonder")
+        assertEquals("Album Multi", b.book.title)
 
         sources.failures.clear()
         sources.put("b", probeResource("piste2.mp3"))
@@ -305,10 +310,10 @@ class ProbeRunnerTest {
         val file = db.bookFileDao().getForBook(id).single()
         sources.put("a", probeResource("piste1.mp3"))
         // Simule un parcours qui change le contenu entre la lecture et l'écriture : commit avec un ancien md5.
-        store.commit(
-            BookProbeCommit(
+        store.commitFile(
+            FileProbeCommit(
                 id,
-                listOf(FileProbeOutcome(file.id, "a", "ancien-md5", 1_000, 1, null, emptyList())),
+                FileProbeOutcome(file.id, "a", "ancien-md5", 1_000, 1, null, emptyList()),
                 null,
                 null,
                 now
@@ -324,5 +329,200 @@ class ProbeRunnerTest {
         runner.run()
         assertEquals(bookIdFor(BookAnchor.Folder("F1")), id)
         assertNotNull(library.getBook(id))
+    }
+
+    // ---- Deux phases, priorités, robustesse --------------------------------------------------------------
+
+    private fun twoFiles(folder: String) = addBookOf(folder, item("$folder-a", "a.mp3"), item("$folder-b", "b.mp3"))
+
+    private fun addBookOf(folder: String, vararg files: DriveItem): String = kotlinx.coroutines.runBlocking {
+        addBook(folder, *files)
+    }
+
+    @Test
+    fun laVitrineDeTousLesLivresEstPoseAvantLesDetails() = runTest {
+        val ids = (1..3).map { twoFiles("L$it") }
+        for (n in 1..3) {
+            sources.put("L$n-a", probeResource("piste1.mp3"))
+            sources.put("L$n-b", probeResource("piste2.mp3"))
+        }
+        // Chaque ouverture de source coûte 10 ms ; le budget de 30 ms est épuisé à la fin de la vitrine.
+        var clockMs = 0L
+        sources.onOpen = { clockMs += 10 }
+        val timed = ProbeRunner(store, sources, AudioProbe(), covers, clock = { now }, monotonicMs = { clockMs })
+
+        val report = timed.run(timeBudgetMs = 30)
+
+        assertEquals(3, report.booksProbed)
+        assertEquals(0, report.filesProbed)
+        assertTrue(report.timeUp)
+        assertTrue(report.hasRemainingWork)
+        ids.forEach { id ->
+            val b = assertNotNull(library.getBook(id))
+            assertEquals("Album Multi", b.book.title)
+            assertEquals(FieldSource.EMBEDDED, b.book.fieldSources[BookField.TITLE]?.source)
+            assertTrue(b.files.none { it.probed })
+            assertTrue(db.bookFileDao().getForBook(id).first().tagsProbed)
+        }
+
+        // Une seconde passe, sans limite, termine sans rien refaire de la vitrine.
+        sources.opened.clear()
+        val rest = ProbeRunner(store, sources, AudioProbe(), covers, clock = { now }).run()
+        assertEquals(0, rest.booksProbed)
+        assertEquals(6, rest.filesProbed)
+        assertFalse(rest.hasRemainingWork)
+        assertTrue(ids.all { id -> library.getBook(id)!!.files.all { it.probed } })
+    }
+
+    @Test
+    fun leLivreEnCoursEstSondeEnPremier() = runTest {
+        val a = addBook("A", item("fa", "a.mp3"))
+        val b = addBook("B", item("fb", "b.mp3"))
+        val c = addBook("C", item("fc", "c.mp3"))
+        listOf("fa", "fb", "fc").forEach { sources.put(it, probeResource("piste1.mp3")) }
+        db.progressDao().upsert(progress(b, lastPlayedAt = 50))
+        db.progressDao().upsert(progress(c, lastPlayedAt = 900))
+
+        runner.run()
+
+        assertEquals(listOf("fc", "fb", "fa"), sources.opened.take(3)) // vitrine : récent d'abord
+        assertEquals(a, bookIdFor(BookAnchor.Folder("A")))
+    }
+
+    private fun progress(bookId: String, lastPlayedAt: Long) =
+        io.github.camelbaggy.livresaudio.core.data.db.ProgressEntity(
+            bookId = bookId,
+            driveFileId = "x",
+            fileMd5 = null,
+            fileIndex = 0,
+            positionMs = 1_000,
+            bookPositionMs = 1_000,
+            status = io.github.camelbaggy.livresaudio.core.model.ListeningStatus.IN_PROGRESS,
+            speed = null,
+            lastPlayedAt = lastPlayedAt,
+            updatedAt = lastPlayedAt,
+            dirty = false
+        )
+
+    @Test
+    fun uneErreurSurUnLivreNeStoppePasLesAutres() = runTest {
+        val ids = (1..3).map { addBook("L$it", item("f$it", "l$it.mp3")) }
+        listOf("f1", "f3").forEach { sources.put(it, probeResource("piste1.mp3")) }
+        sources.failures["f2"] = DriveError.Server(500)
+
+        val report = runner.run()
+
+        assertTrue(report.retryLater)
+        assertTrue(report.progressed)
+        assertTrue(library.getBook(ids[0])!!.files.single().probed)
+        assertFalse(library.getBook(ids[1])!!.files.single().probed)
+        assertTrue(library.getBook(ids[2])!!.files.single().probed)
+
+        sources.failures.clear()
+        sources.put("f2", probeResource("piste1.mp3"))
+        assertFalse(runner.run().retryLater)
+        assertTrue(library.getBook(ids[1])!!.files.single().probed)
+    }
+
+    @Test
+    fun unCompteQuiEchoueSouventDeSuiteEstLaisseAuRunSuivant() = runTest {
+        repeat(10) { n ->
+            addBook("L$n", item("f$n", "l$n.mp3"))
+            sources.failures["f$n"] = DriveError.NetworkUnavailable
+        }
+
+        val report = runner.run()
+
+        assertTrue(report.retryLater)
+        assertFalse(report.progressed)
+        assertEquals(ProbeRunner.MAX_CONSECUTIVE_FAILURES, sources.opened.size)
+    }
+
+    @Test
+    fun sansReseauRienNEstTente() = runTest {
+        addBook("F1", item("a", "a.mp3"))
+        val offline = ProbeRunner(store, sources, AudioProbe(), covers, networkAvailable = { false })
+
+        val report = offline.run()
+
+        assertTrue(report.retryLater)
+        assertTrue(sources.opened.isEmpty())
+    }
+
+    @Test
+    fun surReseauMesureSeuleLaVitrineEstFaite() = runTest {
+        addBook("A", item("fa", "a.mp3"), item("fb", "b.mp3"))
+        sources.put("fa", probeResource("piste1.mp3"))
+        sources.put("fb", probeResource("piste1.mp3"))
+        val metered = ProbeRunner(store, sources, AudioProbe(), covers, clock = { now }, detailsAllowed = { false })
+
+        val report = metered.run()
+
+        assertEquals(1, report.booksProbed)
+        assertEquals(0, report.filesProbed)
+        assertTrue(report.retryLater)
+        assertTrue(sources.opened.none { it == "fb" })
+    }
+
+    @Test
+    fun surDemandeUnSeulLivreEstSonde() = runTest {
+        val a = addBook("A", item("fa", "a.mp3"))
+        addBook("B", item("fb", "b.mp3"))
+        sources.put("fa", probeResource("piste1.mp3"))
+        sources.put("fb", probeResource("piste1.mp3"))
+
+        val report = runner.run(onlyBookId = a)
+
+        assertEquals(1, report.booksProbed)
+        assertEquals(1, report.filesProbed)
+        assertTrue(sources.opened.all { it == "fa" })
+    }
+
+    @Test
+    fun lesChapitresDesFichiersSontNumerotesDansLOrdreDuLivreMemeSiLesFichiersArriventSepares() = runTest {
+        val id = addBook("M", item("a", "a.m4b", "audio/mp4"), item("b", "b.m4b", "audio/mp4"))
+        sources.put("a", resource("chpl-moov-fin.m4b"))
+        sources.put("b", resource("chpl-moov-fin.m4b"))
+        val files = db.bookFileDao().getForBook(id)
+
+        // Le second fichier est validé avant le premier : la numérotation doit quand même suivre l'ordre du livre.
+        for (name in listOf("b", "a")) {
+            val f = files.first { it.driveFileId == name }
+            val chapters = listOf(
+                io.github.camelbaggy.livresaudio.core.model.EmbeddedChapter("$name 1", 0, 1_000),
+                io.github.camelbaggy.livresaudio.core.model.EmbeddedChapter("$name 2", 1_000, 2_000)
+            )
+            store.commitFile(
+                FileProbeCommit(
+                    id,
+                    FileProbeOutcome(f.id, f.driveFileId, f.md5, 2_000, null, null, chapters),
+                    null,
+                    null,
+                    now
+                )
+            )
+        }
+
+        val chapters = db.chapterDao().getForBook(id)
+        assertEquals(listOf("a 1", "a 2", "b 1", "b 2"), chapters.map { it.title })
+        assertEquals(listOf(0, 1, 2, 3), chapters.map { it.indexInBook })
+    }
+
+    @Test
+    fun laVitrineNeToucheNiAuxChapitresNiAuStatutSonde() = runTest {
+        val id = addBook("F1", item("f1", "livre.m4b", "audio/mp4"))
+        sources.put("f1", resource("chpl-moov-fin.m4b"))
+        var clockMs = 0L
+        sources.onOpen = { clockMs += 1_000 }
+        val timed = ProbeRunner(store, sources, AudioProbe(), covers, clock = { now }, monotonicMs = { clockMs })
+
+        timed.run(timeBudgetMs = 500) // la vitrine seule
+
+        val b = assertNotNull(library.getBook(id))
+        assertFalse(b.files.single().probed)
+        assertTrue(b.chapters.isEmpty())
+        assertTrue(kotlin.math.abs(b.files.single().durationMs!! - 8_000) < 80) // durée de l'en-tête
+        assertEquals(b.files.single().durationMs, b.book.totalDurationMs)
+        assertEquals("Livre d'essai", b.book.title)
     }
 }

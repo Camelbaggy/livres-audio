@@ -12,6 +12,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.camelbaggy.livresaudio.core.data.db.LIBRARY_MIGRATIONS
 import io.github.camelbaggy.livresaudio.core.data.db.LibraryDatabase
 import io.github.camelbaggy.livresaudio.core.data.repo.AccountRepository
 import io.github.camelbaggy.livresaudio.core.data.repo.BookmarkRepository
@@ -52,7 +53,9 @@ object DataProvidesModule {
     @Provides
     @Singleton
     fun database(@ApplicationContext context: Context): LibraryDatabase =
-        Room.databaseBuilder(context, LibraryDatabase::class.java, LibraryDatabase.NAME).build()
+        Room.databaseBuilder(context, LibraryDatabase::class.java, LibraryDatabase.NAME)
+            .addMigrations(*LIBRARY_MIGRATIONS)
+            .build()
 
     @Provides
     @DataIoDispatcher

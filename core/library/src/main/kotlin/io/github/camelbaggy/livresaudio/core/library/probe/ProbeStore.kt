@@ -20,11 +20,22 @@ data class ProbeFileRow(
     val durationMs: Long?,
     val trackNumber: Int?,
     val discNumber: Int?,
-    val probed: Boolean
+    /** Fully probed (phase 2): duration, track/disc, chapters. */
+    val probed: Boolean,
+    /** Tags and cover read (phase 1). */
+    val tagsProbed: Boolean
 )
 
-/** A present book and its files (ordered by `sortIndex`). */
-data class ProbeBookRow(val bookId: String, val accountId: String, val files: List<ProbeFileRow>)
+/**
+ * A present book and its files (ordered by `sortIndex`). [lastPlayedAt] comes from `progress` (null = never
+ * played): books being listened to are probed first.
+ */
+data class ProbeBookRow(
+    val bookId: String,
+    val accountId: String,
+    val files: List<ProbeFileRow>,
+    val lastPlayedAt: Long? = null
+)
 
 data class FileProbeOutcome(
     val fileId: Long,
@@ -34,13 +45,17 @@ data class FileProbeOutcome(
     val durationMs: Long?,
     val track: Int?,
     val disc: Int?,
-    val chapters: List<EmbeddedChapter>
+    /** Only written when [complete]. */
+    val chapters: List<EmbeddedChapter>,
+    /** true = phase 2 (file fully probed, chapters replaced); false = phase 1 (tags and header duration only). */
+    val complete: Boolean = true
 )
 
-/** Everything learned about one book in one run, written in a single transaction. */
-data class BookProbeCommit(
+/** What one file taught us, written in a single transaction (a file is never half applied). */
+data class FileProbeCommit(
     val bookId: String,
-    val files: List<FileProbeOutcome>,
+    val file: FileProbeOutcome,
+    /** Book information (provenance `EMBEDDED`), null when this file does not describe the book. */
     val fields: EmbeddedFields?,
     val coverUri: String?,
     val nowMs: Long
@@ -53,7 +68,10 @@ data class BookProbeCommit(
 interface ProbeStore {
     suspend fun loadBooks(): List<ProbeBookRow>
 
-    suspend fun commit(commit: BookProbeCommit)
+    suspend fun commitFile(commit: FileProbeCommit)
+
+    /** Book information only (no file), e.g. when the tag order changes which file is first. */
+    suspend fun commitInfo(bookId: String, fields: EmbeddedFields?, coverUri: String?, nowMs: Long)
 
     /** Sets `sortIndex` = position in [orderedFileIds] (all the files of the book, else nothing happens). */
     suspend fun applyOrder(bookId: String, orderedFileIds: List<Long>)
@@ -61,12 +79,13 @@ interface ProbeStore {
 
 class RoomProbeStore(private val db: LibraryDatabase, private val dispatcher: CoroutineDispatcher) : ProbeStore {
     override suspend fun loadBooks(): List<ProbeBookRow> = withContext(dispatcher) {
-        db.bookDao().observePresentWithProgress().first().map { it.book }
-            .filter { it.state == BookState.PRESENT }
-            .map { book ->
+        db.bookDao().observePresentWithProgress().first()
+            .filter { it.book.state == BookState.PRESENT }
+            .map { (book, progress) ->
                 ProbeBookRow(
                     bookId = book.bookId,
                     accountId = book.accountId,
+                    lastPlayedAt = progress?.lastPlayedAt,
                     files = db.bookFileDao().getForBook(book.bookId).map {
                         ProbeFileRow(
                             id = it.id,
@@ -79,39 +98,41 @@ class RoomProbeStore(private val db: LibraryDatabase, private val dispatcher: Co
                             durationMs = it.durationMs,
                             trackNumber = it.trackNumber,
                             discNumber = it.discNumber,
-                            probed = it.probed
+                            probed = it.probed,
+                            tagsProbed = it.tagsProbed || it.probed
                         )
                     }
                 )
             }
     }
 
-    override suspend fun commit(commit: BookProbeCommit) = withContext(dispatcher) {
+    override suspend fun commitFile(commit: FileProbeCommit) = withContext(dispatcher) {
         db.withTransaction {
             val books = db.bookDao()
             val files = db.bookFileDao()
             val chapters = db.chapterDao()
             val book = books.get(commit.bookId) ?: return@withTransaction
-            val current = files.getForBook(commit.bookId).associateBy { it.id }
-            val applied = commit.files.filter { o ->
-                current[o.fileId]?.let { it.driveFileId == o.driveFileId && it.md5 == o.md5 } == true
-            }
-            if (applied.isEmpty()) return@withTransaction
-            var chapterIndex = 0
-            for (o in applied.sortedBy { current.getValue(it.fileId).sortIndex }) {
-                files.setProbed(o.fileId, o.durationMs, o.track, o.disc)
-                chapters.deleteForFiles(listOf(o.fileId))
-                val rows = o.chapters.map {
+            val outcome = commit.file
+            val current = files.getForBook(commit.bookId)
+            val file = current.firstOrNull { it.id == outcome.fileId } ?: return@withTransaction
+            if (file.driveFileId != outcome.driveFileId || file.md5 != outcome.md5) return@withTransaction
+            if (outcome.complete) {
+                files.setProbed(file.id, outcome.durationMs, outcome.track, outcome.disc)
+                chapters.deleteForFiles(listOf(file.id))
+                val rows = outcome.chapters.map {
                     ChapterEntity(
                         bookId = commit.bookId,
-                        fileId = o.fileId,
-                        indexInBook = chapterIndex++,
+                        fileId = file.id,
+                        indexInBook = 0, // renumbered below
                         title = it.title,
                         startMs = it.startMs,
                         endMs = it.endMs
                     )
                 }
                 if (rows.isNotEmpty()) chapters.insert(rows)
+                renumberChapters(commit.bookId, current.associate { it.id to it.sortIndex })
+            } else {
+                files.setTagsProbed(file.id, outcome.durationMs, outcome.track, outcome.disc)
             }
             val refreshed = files.getForBook(commit.bookId)
             val total = if (refreshed.isNotEmpty() && refreshed.all { it.durationMs != null }) {
@@ -119,10 +140,28 @@ class RoomProbeStore(private val db: LibraryDatabase, private val dispatcher: Co
             } else {
                 book.totalDurationMs
             }
-            val withInfo = commit.fields?.let { book.withEmbedded(it, commit.coverUri, commit.nowMs) } ?: book
+            val info = commit.fields ?: EmbeddedFields().takeIf { commit.coverUri != null }
+            val withInfo = info?.let { book.withEmbedded(it, commit.coverUri, commit.nowMs) } ?: book
             books.upsert(withInfo.copy(totalDurationMs = total))
         }
     }
+
+    /** `indexInBook` = rank in the book: files by `sortIndex`, then by start time (files commit one by one). */
+    private suspend fun renumberChapters(bookId: String, sortIndexOf: Map<Long, Int>) {
+        val chapters = db.chapterDao()
+        chapters.getForBook(bookId)
+            .sortedWith(compareBy({ sortIndexOf[it.fileId] ?: Int.MAX_VALUE }, { it.startMs }))
+            .forEachIndexed { index, chapter -> if (chapter.indexInBook != index) chapters.setIndex(chapter.id, index) }
+    }
+
+    override suspend fun commitInfo(bookId: String, fields: EmbeddedFields?, coverUri: String?, nowMs: Long) =
+        withContext(dispatcher) {
+            db.withTransaction {
+                val book = db.bookDao().get(bookId) ?: return@withTransaction
+                val info = fields ?: EmbeddedFields().takeIf { coverUri != null } ?: return@withTransaction
+                db.bookDao().upsert(book.withEmbedded(info, coverUri, nowMs))
+            }
+        }
 
     override suspend fun applyOrder(bookId: String, orderedFileIds: List<Long>) = withContext(dispatcher) {
         db.withTransaction {

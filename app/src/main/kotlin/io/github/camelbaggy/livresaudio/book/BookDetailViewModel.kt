@@ -22,6 +22,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** Asks for a priority probe of a book (tags, cover, durations, chapters). Implemented over `ProbeScheduling`. */
+fun interface ProbeRequester {
+    fun prioritize(bookId: String)
+}
+
 data class BookDetailState(
     val loading: Boolean = true,
     val notFound: Boolean = false,
@@ -101,10 +106,19 @@ class BookDetailViewModel @Inject constructor(
     private val progressRepository: ProgressRepository,
     private val gateway: PlaybackGateway,
     activeBook: ActiveBookSource,
-    private val clock: Clock
+    private val clock: Clock,
+    probe: ProbeRequester
 ) : ViewModel() {
     private val bookId: String = checkNotNull(savedState[ARG_BOOK_ID]) { "bookId manquant" }
     private val confirmReset = MutableStateFlow(false)
+
+    init {
+        // The sheet shows durations and chapters: do not wait for the global probe to get to this book.
+        viewModelScope.launch {
+            val book = library.getBook(bookId) ?: return@launch
+            if (book.files.any { !it.probed }) probe.prioritize(bookId)
+        }
+    }
 
     val state: StateFlow<BookDetailState> = combine(
         library.observeBook(bookId),

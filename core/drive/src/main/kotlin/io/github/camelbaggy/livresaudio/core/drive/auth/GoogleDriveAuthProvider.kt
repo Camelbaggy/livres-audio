@@ -12,6 +12,8 @@ import io.github.camelbaggy.livresaudio.core.model.AuthUi
 import io.github.camelbaggy.livresaudio.core.model.ConnectedAccount
 import io.github.camelbaggy.livresaudio.core.model.DriveAuthProvider
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** Calls `about.get` with a token not yet bound to a stored account. */
 fun interface AboutFetcher {
@@ -25,10 +27,25 @@ fun interface AboutFetcher {
 class GoogleDriveAuthProvider internal constructor(
     private val store: AccountStore,
     private val gateway: AuthorizationGateway,
+    private val clock: () -> Long = System::currentTimeMillis,
     private val about: AboutFetcher
 ) : DriveAuthProvider {
-    /** Last token given per account, kept in memory only, to be able to invalidate it on `forceRefresh`. */
-    private val lastTokens = ConcurrentHashMap<AccountId, String>()
+    private class CachedToken(val token: AccessToken, val obtainedAtMs: Long)
+
+    /**
+     * Last token given per account, with the time it was obtained. Memory only: never persisted, never logged.
+     * It saves one Play Services round trip per HTTP request. It is reused for [TOKEN_TTL_MS] (Google tokens last
+     * about an hour); a token that expired earlier than that gets a 401, and the OkHttp `Authenticator` then asks
+     * for `forceRefresh`. An entry is kept after its TTL so that `forceRefresh` can still `clearToken` it.
+     */
+    private val lastTokens = ConcurrentHashMap<AccountId, CachedToken>()
+
+    /** One lock per account: concurrent callers wait for a single `authorize` instead of making their own. */
+    private val locks = ConcurrentHashMap<AccountId, Mutex>()
+
+    private fun remember(accountId: AccountId, token: AccessToken) {
+        lastTokens[accountId] = CachedToken(token, clock())
+    }
 
     override suspend fun addAccount(ui: AuthUi, role: AccountRole): AuthResult<ConnectedAccount> {
         val activityUi = ui as? ActivityAuthUi
@@ -46,7 +63,7 @@ class GoogleDriveAuthProvider internal constructor(
             is DriveResult.Failure -> return result.error.toAuthFailure()
         }
         val account = store.upsert(user.emailAddress ?: chosen, user.displayName, role)
-        lastTokens[account.id] = token.value
+        remember(account.id, token)
         return AuthResult.Success(account)
     }
 
@@ -54,7 +71,7 @@ class GoogleDriveAuthProvider internal constructor(
         val activityUi = ui as? ActivityAuthUi
             ?: return AuthResult.Failure("interface d'authentification incompatible")
         val account = store.find(accountId) ?: return AuthResult.Failure("compte inconnu")
-        lastTokens.remove(accountId)?.let { gateway.clearToken(it) }
+        lastTokens.remove(accountId)?.let { gateway.clearToken(it.token.value) }
         val token = when (val granted = gateway.authorize(account.email, activityUi)) {
             is GatewayResult.Granted -> granted.token
             GatewayResult.Cancelled -> return AuthResult.Cancelled
@@ -71,31 +88,37 @@ class GoogleDriveAuthProvider internal constructor(
             return AuthResult.Failure("adresse différente de celle du compte")
         }
         val updated = store.upsert(account.email, user.displayName, account.role)
-        lastTokens[updated.id] = token.value
+        remember(updated.id, token)
         return AuthResult.Success(updated)
     }
 
     override suspend fun removeAccount(accountId: AccountId) {
-        lastTokens.remove(accountId)?.let { gateway.clearToken(it) }
+        lastTokens.remove(accountId)?.let { gateway.clearToken(it.token.value) }
         store.remove(accountId)
     }
 
     override suspend fun getAccessToken(accountId: AccountId, forceRefresh: Boolean): AuthResult<AccessToken> {
         val account = store.find(accountId) ?: return AuthResult.Failure("compte inconnu")
-        if (forceRefresh) lastTokens[accountId]?.let { gateway.clearToken(it) }
-        return when (val result = gateway.authorize(account.email, ui = null)) {
-            is GatewayResult.Granted -> {
-                lastTokens[accountId] = result.token.value
-                AuthResult.Success(result.token)
+        return locks.getOrPut(accountId) { Mutex() }.withLock {
+            val cached = lastTokens[accountId]
+            if (!forceRefresh && cached != null && clock() - cached.obtainedAtMs < TOKEN_TTL_MS) {
+                return@withLock AuthResult.Success(cached.token)
             }
+            if (forceRefresh) lastTokens.remove(accountId)?.let { gateway.clearToken(it.token.value) }
+            when (val result = gateway.authorize(account.email, ui = null)) {
+                is GatewayResult.Granted -> {
+                    remember(accountId, result.token)
+                    AuthResult.Success(result.token)
+                }
 
-            GatewayResult.ConsentRequired -> AuthResult.NeedsUserAction
+                GatewayResult.ConsentRequired -> AuthResult.NeedsUserAction
 
-            GatewayResult.Cancelled -> AuthResult.NeedsUserAction
+                GatewayResult.Cancelled -> AuthResult.NeedsUserAction
 
-            GatewayResult.NetworkUnavailable -> AuthResult.NetworkUnavailable
+                GatewayResult.NetworkUnavailable -> AuthResult.NetworkUnavailable
 
-            is GatewayResult.Failed -> AuthResult.Failure(result.message)
+                is GatewayResult.Failed -> AuthResult.Failure(result.message)
+            }
         }
     }
 
@@ -103,5 +126,9 @@ class GoogleDriveAuthProvider internal constructor(
         DriveError.NetworkUnavailable -> AuthResult.NetworkUnavailable
         DriveError.AuthRequired -> AuthResult.NeedsUserAction
         else -> AuthResult.Failure(describe())
+    }
+
+    private companion object {
+        const val TOKEN_TTL_MS = 45L * 60 * 1000
     }
 }

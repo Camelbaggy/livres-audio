@@ -8,6 +8,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.camelbaggy.livresaudio.book.ProbeRequester
+import io.github.camelbaggy.livresaudio.core.library.probe.ProbeScheduling
 import io.github.camelbaggy.livresaudio.core.library.scan.LibraryScanScheduling
 import io.github.camelbaggy.livresaudio.core.playback.ActiveBook
 import io.github.camelbaggy.livresaudio.core.playback.ActiveBookHolder
@@ -42,4 +44,9 @@ object PlaybackUiProvidesModule {
     @Singleton
     fun scanRequester(@ApplicationContext context: Context): ScanRequester =
         ScanRequester { LibraryScanScheduling.requestScanNow(WorkManager.getInstance(context)) }
+
+    @Provides
+    @Singleton
+    fun probeRequester(@ApplicationContext context: Context): ProbeRequester =
+        ProbeRequester { ProbeScheduling.prioritize(WorkManager.getInstance(context), it) }
 }

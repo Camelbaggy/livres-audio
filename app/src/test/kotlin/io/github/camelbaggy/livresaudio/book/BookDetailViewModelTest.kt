@@ -38,6 +38,7 @@ class BookDetailViewModelTest {
     private lateinit var gateway: FakeGateway
     private lateinit var active: FakeActiveBookSource
     private lateinit var viewModel: BookDetailViewModel
+    private val probed = mutableListOf<String>()
 
     @BeforeTest
     fun setUp() {
@@ -61,7 +62,7 @@ class BookDetailViewModelTest {
             gateway,
             active,
             Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)
-        )
+        ) { probed += it }
     }
 
     @AfterTest
@@ -137,5 +138,31 @@ class BookDetailViewModelTest {
         collect()
         viewModel.play()
         assertEquals(listOf("playBook:b1"), gateway.calls)
+    }
+
+    @Test
+    fun `ouvrir la fiche d'un livre non sonde demande un sondage prioritaire`() = runTest {
+        library.books.value = mapOf(
+            "b2" to BookWithFiles(
+                book = bookEntity("b2", title = "Autre"),
+                files = listOf(bookFile("b2", 0, durationMs = null, probed = false)),
+                chapters = emptyList()
+            )
+        )
+        BookDetailViewModel(
+            SavedStateHandle(mapOf(BookDetailViewModel.ARG_BOOK_ID to "b2")),
+            library,
+            progress,
+            gateway,
+            active,
+            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)
+        ) { probed += it }
+
+        assertEquals(listOf("b2"), probed)
+    }
+
+    @Test
+    fun `un livre deja sonde ne demande rien`() = runTest {
+        assertTrue(probed.isEmpty())
     }
 }
