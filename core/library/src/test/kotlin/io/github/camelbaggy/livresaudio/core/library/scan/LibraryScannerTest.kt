@@ -6,7 +6,9 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.camelbaggy.livresaudio.core.data.db.LibraryDatabase
 import io.github.camelbaggy.livresaudio.core.data.identity.bookIdFor
 import io.github.camelbaggy.livresaudio.core.data.repo.RoomAccountRepository
+import io.github.camelbaggy.livresaudio.core.data.repo.RoomBookRootLookup
 import io.github.camelbaggy.livresaudio.core.data.repo.RoomLibraryRepository
+import io.github.camelbaggy.livresaudio.core.data.repo.RoomSyncStateRepository
 import io.github.camelbaggy.livresaudio.core.drive.rest.DriveError
 import io.github.camelbaggy.livresaudio.core.drive.rest.DriveResult
 import io.github.camelbaggy.livresaudio.core.library.TestTree
@@ -55,7 +57,17 @@ class LibraryScannerTest {
         db = Room.inMemoryDatabaseBuilder(context, LibraryDatabase::class.java).allowMainThreadQueries().build()
         accounts = RoomAccountRepository(db, Dispatchers.Unconfined)
         library = RoomLibraryRepository(db, Dispatchers.Unconfined)
-        scanner = LibraryScanner(accounts, library, lister, Dispatchers.Unconfined, clock = { now })
+        val feed = FakeChangeFeed()
+        scanner = LibraryScanner(
+            accounts,
+            library,
+            lister,
+            feed,
+            RoomSyncStateRepository(db, Dispatchers.Unconfined),
+            ChangedRootsResolver(feed, RoomBookRootLookup(db, Dispatchers.Unconfined)),
+            Dispatchers.Unconfined,
+            clock = { now }
+        )
     }
 
     @After
@@ -94,7 +106,7 @@ class LibraryScannerTest {
         lister.results["root"] = t.ok()
         connect("shared", AccountRole.SHARED, "root")
 
-        val report = scanner.scan()
+        val report = scanner.scan(ScanMode.FULL)
 
         val done = assertIs<RootScanOutcome.Done>(report.roots.single().outcome)
         assertEquals(1, done.found)
@@ -123,7 +135,7 @@ class LibraryScannerTest {
         lister.results["root"] = t.ok()
         connect("perso", AccountRole.PERSONAL, "root")
 
-        scanner.scan()
+        scanner.scan(ScanMode.FULL)
 
         val book = assertNotNull(
             library.getBook(
@@ -147,10 +159,10 @@ class LibraryScannerTest {
         val t = seriesTree("Livre Un", "Livre Deux")
         lister.results["root"] = t.ok()
         connect("shared", AccountRole.SHARED, "root")
-        scanner.scan()
+        scanner.scan(ScanMode.FULL)
 
         lister.results["root"] = DriveResult.Failure(DriveError.NetworkUnavailable)
-        val report = scanner.scan()
+        val report = scanner.scan(ScanMode.FULL)
 
         val failed = assertIs<RootScanOutcome.Failed>(report.roots.single().outcome)
         assertEquals(ScanFailure.Drive(DriveError.NetworkUnavailable), failed.failure)
@@ -169,13 +181,13 @@ class LibraryScannerTest {
         lister.results["rootB"] = onRoot(b, "rootB")
         connect("shared", AccountRole.SHARED, "root")
         connect("perso", AccountRole.PERSONAL, "rootB")
-        scanner.scan()
+        scanner.scan(ScanMode.FULL)
 
         lister.results["root"] = DriveResult.Failure(DriveError.Server(503))
         val bEmpty = TestTree()
         bEmpty.folder("Auteur B")
         lister.results["rootB"] = onRoot(bEmpty, "rootB")
-        val report = scanner.scan()
+        val report = scanner.scan(ScanMode.FULL)
 
         assertIs<RootScanOutcome.Failed>(report.roots.first { it.driveFolderId == "root" }.outcome)
         assertEquals(
@@ -194,13 +206,13 @@ class LibraryScannerTest {
         val full = seriesTree("Livre Un", "Livre Deux")
         lister.results["root"] = full.ok()
         connect("shared", AccountRole.SHARED, "root")
-        scanner.scan()
+        scanner.scan(ScanMode.FULL)
 
         val withoutTwo = seriesTree("Livre Un")
         // Same folder ids as the full tree (generated in the same order): "Livre Un" keeps its id.
         lister.results["root"] = withoutTwo.ok()
         now += 1000
-        val report = scanner.scan()
+        val report = scanner.scan(ScanMode.FULL)
 
         assertEquals(1, assertIs<RootScanOutcome.Done>(report.roots.single().outcome).missing)
         assertEquals(BookState.PRESENT, stateOf(full, "Livre Un"))
@@ -208,7 +220,7 @@ class LibraryScannerTest {
 
         lister.results["root"] = full.ok()
         now += 1000
-        val back = scanner.scan()
+        val back = scanner.scan(ScanMode.FULL)
 
         val done = assertIs<RootScanOutcome.Done>(back.roots.single().outcome)
         assertEquals(0, done.missing)
@@ -221,17 +233,17 @@ class LibraryScannerTest {
         val full = seriesTree("Livre Un", "Livre Deux")
         lister.results["root"] = full.ok()
         connect("shared", AccountRole.SHARED, "root")
-        scanner.scan()
+        scanner.scan(ScanMode.FULL)
         lister.results["root"] = seriesTree("Livre Un").ok()
         now += 1000
-        scanner.scan()
+        scanner.scan(ScanMode.FULL)
 
         now += TimeUnit.DAYS.toMillis(89)
-        assertEquals(0, scanner.scan().purged)
+        assertEquals(0, scanner.scan(ScanMode.FULL).purged)
         assertEquals(BookState.MISSING, stateOf(full, "Livre Deux"))
 
         now += TimeUnit.DAYS.toMillis(2)
-        assertEquals(1, scanner.scan().purged)
+        assertEquals(1, scanner.scan(ScanMode.FULL).purged)
         assertNull(stateOf(full, "Livre Deux"))
     }
 }

@@ -19,8 +19,8 @@ fun interface TreeLister {
  * (`'a' in parents or 'b' in parents`) to cut the number of calls; pages are followed to the end.
  *
  * Any error (network, quota, auth...) aborts the listing and is returned as is: the caller must then treat the
- * walk as incomplete. Where `changes.list` will slot in (lot 2): a sibling [TreeLister] that only refreshes the
- * folders reported as changed, used between two full walks.
+ * walk as incomplete. `changes.list` does not replace this
+ * class: [LibraryScanner] only decides WHICH roots are listed again (a touched root is listed entirely).
  */
 class DriveTreeLister(
     private val client: DriveRestClient,

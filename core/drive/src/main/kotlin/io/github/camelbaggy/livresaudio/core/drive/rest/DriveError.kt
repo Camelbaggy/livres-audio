@@ -20,6 +20,9 @@ sealed interface DriveError {
     data class Http(val code: Int, val message: String) : DriveError
 
     data class Unexpected(val message: String) : DriveError
+
+    /** The `changes` page token is expired, invalid or unusable: a full walk is needed to get a fresh one. */
+    data class InvalidChangeToken(val message: String) : DriveError
 }
 
 sealed interface DriveResult<out T> {
@@ -38,4 +41,5 @@ fun DriveError.describe(): String = when (this) {
     is DriveError.Server -> "erreur serveur ($code)"
     is DriveError.Http -> "erreur HTTP $code : $message"
     is DriveError.Unexpected -> "erreur inattendue : $message"
+    is DriveError.InvalidChangeToken -> "jeton de changements invalide : $message"
 }

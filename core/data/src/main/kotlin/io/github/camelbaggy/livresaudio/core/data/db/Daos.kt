@@ -89,6 +89,10 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE rootId = :rootId")
     suspend fun getByRoot(rootId: String): List<BookEntity>
 
+    /** Roots holding a book anchored on one of [driveIds] (folder or single file). */
+    @Query("SELECT DISTINCT rootId FROM books WHERE anchorDriveId IN (:driveIds) OR driveFolderId IN (:driveIds)")
+    suspend fun rootIdsForDriveIds(driveIds: List<String>): List<String>
+
     @Query("SELECT * FROM books WHERE accountId = :accountId")
     suspend fun getByAccount(accountId: String): List<BookEntity>
 
@@ -114,6 +118,13 @@ interface BookDao {
 
 @Dao
 interface BookFileDao {
+    /** Roots of the books owning one of these Drive files. */
+    @Query(
+        "SELECT DISTINCT b.rootId FROM book_files f JOIN books b ON b.bookId = f.bookId " +
+            "WHERE f.driveFileId IN (:driveFileIds)"
+    )
+    suspend fun rootIdsForDriveFileIds(driveFileIds: List<String>): List<String>
+
     @Query("SELECT * FROM book_files WHERE bookId = :bookId ORDER BY sortIndex")
     suspend fun getForBook(bookId: String): List<BookFileEntity>
 

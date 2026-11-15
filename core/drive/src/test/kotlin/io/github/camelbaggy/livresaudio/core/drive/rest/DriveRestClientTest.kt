@@ -263,4 +263,68 @@ class DriveRestClientTest {
         val offline = FakeAuth(AuthResult.NetworkUnavailable)
         assertEquals(DriveResult.Failure(DriveError.NetworkUnavailable), buildClient(offline).listFiles(account))
     }
+
+    @Test
+    fun startPageTokenIsRead() = runTest {
+        server.enqueue(json("""{"startPageToken":"42"}"""))
+
+        val result = client.getStartPageToken(account)
+
+        assertEquals("42", assertIs<DriveResult.Success<String>>(result).value)
+        assertEquals("/drive/v3/changes/startPageToken", server.takeRequest().requestUrl?.encodedPath)
+    }
+
+    @Test
+    fun changesArePaginatedUntilNewStartPageToken() = runTest {
+        server.enqueue(
+            json(
+                """{"nextPageToken":"p2","changes":[{"fileId":"a","removed":false,
+                |"file":{"id":"a","parents":["root"],"trashed":true,"name":"x"}}]}
+                """.trimMargin()
+            )
+        )
+        server.enqueue(json("""{"newStartPageToken":"99","changes":[{"fileId":"b","removed":true}]}"""))
+
+        val result = client.listAllChanges(account, "p1")
+
+        val set = assertIs<DriveResult.Success<DriveChangeSet>>(result).value
+        assertEquals("99", set.newStartPageToken)
+        assertEquals(listOf("a", "b"), set.changes.map { it.fileId })
+        assertEquals(true, set.changes[0].file?.trashed)
+        assertEquals(true, set.changes[1].removed)
+        val first = server.takeRequest().requestUrl!!
+        assertEquals("p1", first.queryParameter("pageToken"))
+        assertEquals("true", first.queryParameter("includeRemoved"))
+        assertTrue(first.queryParameter("fields")!!.contains("newStartPageToken"))
+        assertEquals("p2", server.takeRequest().requestUrl!!.queryParameter("pageToken"))
+    }
+
+    @Test
+    fun rejectedChangeTokenIsATypedError() = runTest {
+        server.enqueue(
+            json("""{"error":{"code":400,"message":"Invalid Value","errors":[{"reason":"invalid"}]}}""", 400)
+        )
+
+        val result = client.listAllChanges(account, "stale")
+
+        assertIs<DriveError.InvalidChangeToken>(assertIs<DriveResult.Failure>(result).error)
+    }
+
+    @Test
+    fun otherChangeErrorsStayWhatTheyAre() = runTest {
+        server.enqueue(json("""{"error":{"code":403,"message":"no","errors":[{"reason":"forbidden"}]}}""", 403))
+
+        val result = client.listChanges(account, "p")
+
+        assertIs<DriveError.Forbidden>(assertIs<DriveResult.Failure>(result).error)
+    }
+
+    @Test
+    fun tooManyChangePagesFallBackToFullWalk() = runTest {
+        repeat(3) { server.enqueue(json("""{"nextPageToken":"n$it","changes":[]}""")) }
+
+        val result = client.listAllChanges(account, "p", maxPages = 3)
+
+        assertIs<DriveError.InvalidChangeToken>(assertIs<DriveResult.Failure>(result).error)
+    }
 }
