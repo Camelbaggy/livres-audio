@@ -25,9 +25,7 @@ class MistralEngine(HttpEngine):
     env_var = "MISTRAL_API_KEY"
     price_per_million_chars = eur_per_million(16.0)  # 13 USD annoncé pour la version « 3 »
     max_chars = 2000  # limite non documentée trouvée : valeur prudente
-    default_voice = (
-        "fr_marie_neutral"  # supposé (voix « Marie ») : à vérifier
-    )
+    default_voice = "fr_marie_neutral"  # supposé (voix « Marie ») : à vérifier
     description = "Mistral Voxtral TTS (en ligne, Experiment sans carte ?)"
 
     def list_remote_voices(self) -> list[str]:

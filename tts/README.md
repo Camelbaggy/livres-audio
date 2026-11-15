@@ -1,7 +1,7 @@
 # Atelier de synthèse vocale (`tts/`)
 
 Outil en ligne de commande, indépendant de l'application Android (voir `CLAUDE.md` §8).
-État : lots T0 (`bench`) et T1 (`prepare`) disponibles ; `say`, `build`, `fix` (T2), `estimate`, `publish` (T3) à venir.
+État : lots T0 (`bench`), T1 (`prepare`) et T2 (`say`, `build`, `fix`, `estimate`) disponibles ; `publish` (T3) à venir.
 
 ## Installation
 
@@ -79,3 +79,25 @@ converti (ambigu avec le mot « ire »).
 ```bash
 uv run ruff check && uv run pytest
 ```
+
+## Synthèse (lot T2)
+
+```bash
+uv run tts estimate projets/livre --moteur google          # caractères, durée, coût, palier du mois
+uv run tts say "Henri IV vit Siorac." --moteur google --serie fortune-de-france
+uv run tts build projets/livre --moteur google --voix fr-FR-Chirp3-HD-Aoede [--max-caracteres N]
+uv run tts fix projets/livre                                # après une correction du lexique
+```
+
+- Lexiques : `lexiques/global.yaml` puis `lexiques/<serie>.yaml` (`mot` ou `regex`, `dire`,
+  `casse`, `ipa` ignoré pour l'instant, `commentaire`). Appliqués après la normalisation.
+- Cache : `projets/<livre>/cache/` (clé = SHA-256 texte final + moteur + voix + paramètres) ;
+  une interruption se reprend en relançant `build`. Sortie : `sortie/NN - Titre.m4a`.
+- **Coût (moteur payant)** : registre `~/.config/livres-tts/registre-depenses.json` (hors dépôt,
+  `--registre` ou `LIVRES_TTS_REGISTRE` pour le déplacer), caractères par moteur et par mois UTC,
+  réservés avant chaque appel. Sans `--budget-max`, `build` refuse de dépasser le palier gratuit
+  du mois ; `--jusqu-au-palier` synthétise jusqu'à la fin du palier puis s'arrête (reprise le
+  mois suivant) ; `--budget-max <€>` autorise un dépassement plafonné pour ce run. Un registre
+  illisible bloque tout appel payant. Un appel en échec reste compté (prudence) ; pour corriger
+  à la main, éditer le JSON (copie `.bak` à côté).
+- Codes de sortie de `build`/`fix` : 0 terminé, 1 annulé, 2 refus ou erreur, 4 arrêt net partiel.

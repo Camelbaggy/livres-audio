@@ -67,7 +67,10 @@ def test_feminine():
 
 def test_integer_and_decimal_words():
     assert integer_words("007") == "zéro zéro sept"
-    assert integer_words("1234567890123") == "un deux trois quatre cinq six sept huit neuf zéro un deux trois"
+    assert (
+        integer_words("1234567890123")
+        == "un deux trois quatre cinq six sept huit neuf zéro un deux trois"
+    )
     assert decimal_words("3", "14") == "trois virgule quatorze"
     assert decimal_words("0", "05") == "zéro virgule zéro cinq"
     assert decimal_words("2", "50") == "deux virgule cinquante"

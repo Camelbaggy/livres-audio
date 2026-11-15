@@ -45,21 +45,27 @@ def test_non_french_language_warns(tmp_path):
 
 
 def test_drm_encryption_refused(tmp_path):
-    path = build_epub(tmp_path / "x.epub", [Doc("ch1.xhtml", "C", body_of(3))], [("C", "ch1.xhtml", [])])
+    path = build_epub(
+        tmp_path / "x.epub", [Doc("ch1.xhtml", "C", body_of(3))], [("C", "ch1.xhtml", [])]
+    )
     add_encryption(path, "http://www.w3.org/2001/04/xmlenc#aes128-cbc")
     with pytest.raises(DrmError, match="DRM"):
         load_epub(path)
 
 
 def test_adobe_rights_refused(tmp_path):
-    path = build_epub(tmp_path / "x.epub", [Doc("ch1.xhtml", "C", body_of(3))], [("C", "ch1.xhtml", [])])
+    path = build_epub(
+        tmp_path / "x.epub", [Doc("ch1.xhtml", "C", body_of(3))], [("C", "ch1.xhtml", [])]
+    )
     rewrite_zip(path, {}, {"META-INF/rights.xml": b"<rights/>"})
     with pytest.raises(DrmError, match="rights.xml"):
         load_epub(path)
 
 
 def test_font_obfuscation_is_not_drm(tmp_path):
-    path = build_epub(tmp_path / "x.epub", [Doc("ch1.xhtml", "C", body_of(3))], [("C", "ch1.xhtml", [])])
+    path = build_epub(
+        tmp_path / "x.epub", [Doc("ch1.xhtml", "C", body_of(3))], [("C", "ch1.xhtml", [])]
+    )
     add_encryption(path, "http://www.idpf.org/2008/embedding", uri="EPUB/fonts/a.otf")
     assert load_epub(path).title
 

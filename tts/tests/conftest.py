@@ -42,7 +42,9 @@ def full_docs() -> tuple[list[Doc], list[TocNode]]:
         + p("Les Seigneurs de Valcombe")  # en-tête courant, répété
         + p(ch1_paras[1] + '<sup><a href="notes.xhtml#n2">2</a></sup>')
         + p("12")  # numéro de page
-        + p("Il se hâta vers la for-\nteresse de Mespech, où cheva&#173;lier et page l'attendaient.")
+        + p(
+            "Il se hâta vers la for-\nteresse de Mespech, où cheva&#173;lier et page l'attendaient."
+        )
         + "\n".join(p(t) for t in ch1_paras[2:])
         + "<hr/>"
         + p("Le lendemain, Henri IV entrait dans Paris, et le XVIe siècle finissait mal."),

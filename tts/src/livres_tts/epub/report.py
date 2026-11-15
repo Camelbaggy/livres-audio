@@ -63,8 +63,10 @@ def render_report(
         out.append("<div class='warn'><strong>Avertissements</strong><ul>")
         out.extend(f"<li>{e(w)}</li>" for w in warnings)
         out.append("</ul></div>")
-    out.append("<h2>Chapitres</h2><table><tr><th>N°</th><th>Titre</th>"
-               "<th>Caractères</th><th>Durée estimée</th></tr>")
+    out.append(
+        "<h2>Chapitres</h2><table><tr><th>N°</th><th>Titre</th>"
+        "<th>Caractères</th><th>Durée estimée</th></tr>"
+    )
     for ch in chapters:
         out.append(
             f"<tr><td class='n'>{ch['index']}</td><td>{e(ch['titre'])}</td>"
@@ -86,9 +88,7 @@ def render_report(
         out.append(f"<details><summary>{e(kind)} ({len(items)})</summary><table>")
         out.append("<tr><th>Chapitre</th><th>Extrait</th></tr>")
         for r in items[:MAX_LISTED_PER_TYPE]:
-            out.append(
-                f"<tr><td>{e(r.chapter)}</td><td class='ex'>{e(r.excerpt)}</td></tr>"
-            )
+            out.append(f"<tr><td>{e(r.chapter)}</td><td class='ex'>{e(r.excerpt)}</td></tr>")
         if len(items) > MAX_LISTED_PER_TYPE:
             more = len(items) - MAX_LISTED_PER_TYPE
             out.append(f"<tr><td colspan='2'>… et {more} autres</td></tr>")

@@ -35,7 +35,11 @@ def test_prepare_end_to_end(full_epub, tmp_path):
     assert project["livre"]["titre"] == "Les Seigneurs de Valcombe"
     assert project["livre"]["serie"] == "Valcombe" and project["livre"]["tome"] == "1"
     assert project["chapitrage"] == {"source": "toc", "niveau": 2}
-    assert [c["titre"] for c in project["chapitres"]] == ["Chapitre I", "Chapitre II", "Chapitre III"]
+    assert [c["titre"] for c in project["chapitres"]] == [
+        "Chapitre I",
+        "Chapitre II",
+        "Chapitre III",
+    ]
     assert project["chapitres"][0]["titre_lu"] == "Chapitre un"
     assert project["chapitres"][0]["fichier"] == "chapitres/01 - Chapitre I.txt"
     assert project["statistiques"]["caracteres"] == result.total_chars > 10_000
@@ -80,9 +84,7 @@ def test_prepare_keep_notes_reads_notes_at_chapter_end(full_epub, tmp_path):
 
 def test_prepare_level_option_and_dedication(full_epub, tmp_path):
     out = tmp_path / "p"
-    result = prepare(
-        full_epub, out, PrepareOptions(chapter_level=1, remove_dedications=True)
-    )
+    result = prepare(full_epub, out, PrepareOptions(chapter_level=1, remove_dedications=True))
     assert [c["titre"] for c in result.chapters] == ["Première partie", "Deuxième partie"]
     assert result.removals_by_kind.get("dédicace") == 1
 

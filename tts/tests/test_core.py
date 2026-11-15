@@ -107,8 +107,8 @@ def test_cli_refuses_paid(tmp_path, capsys):
 
 
 def test_cli_pending_command(capsys):
-    assert main(["build"]) == 3
-    assert "pas encore disponible (lot T2)" in capsys.readouterr().err
+    assert main(["publish"]) == 3
+    assert "pas encore disponible (lot T3)" in capsys.readouterr().err
 
 
 @needs_ffmpeg

@@ -263,8 +263,12 @@ def build_chapters(
         if bd is None:
             if chars < MIN_LEADING_CHARS:
                 result.removals.append(
-                    Removal(R_LEADING, docs[flat[g0][0]].path, excerpt(blocks[0].text),
-                            position=flat[g0][1])  # fmt: skip
+                    Removal(
+                        R_LEADING,
+                        docs[flat[g0][0]].path,
+                        excerpt(blocks[0].text),
+                        position=flat[g0][1],
+                    )  # fmt: skip
                 )
                 continue
             title = next((b.text for b in blocks if b.kind == "h"), "Avant-propos")

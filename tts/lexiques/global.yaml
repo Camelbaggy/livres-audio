@@ -1,0 +1,9 @@
+# Lexique de prononciation global (appliqué à tous les livres, avant le lexique de série).
+# Liste vide pour l'instant. Format d'une entrée :
+#
+# - mot: Siorac          # mot exact, avec limites de mot (ou « regex: ... » pour un motif)
+#   dire: Sioraque       # réécriture phonétique en français courant (obligatoire)
+#   casse: true          # true (défaut) = la casse compte ; false = insensible à la casse
+#   ipa: sjɔʁak          # facultatif ; non utilisé tant que le moteur ne l'accepte pas
+#   commentaire: pourquoi cette entrée
+[]

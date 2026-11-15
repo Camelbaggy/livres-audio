@@ -76,7 +76,7 @@ def estimate_cost(chars: int) -> dict[str, float | str]:
 
     engine = get_engine("google")
     price = engine.price_per_million_chars
-    free = 1_000_000
+    free = engine.free_chars_per_month
     return {
         "moteur": "Google Chirp 3 HD",
         "prix_par_million": price,

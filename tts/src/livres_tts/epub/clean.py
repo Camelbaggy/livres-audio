@@ -193,9 +193,9 @@ def running_head_keys(texts: list[str], min_count: int = 5) -> set[str]:
 
 def running_head_key(text: str) -> str | None:
     text = collapse(text)
-    if not text or len(text) > 60 or text[-1] in ".!?…»,;:\"”)":
+    if not text or len(text) > 60 or text[-1] in '.!?…»,;:"”)':
         return None
-    if _DIALOGUE_START.match(text) or text[0] in "«\"“(":
+    if _DIALOGUE_START.match(text) or text[0] in '«"“(':
         return None
     key = re.sub(r"\d+", "", text).lower().strip(" -–—|·.")
     return key if re.search(r"[a-zà-ÿ]", key) else None
@@ -352,8 +352,10 @@ class _Cleaner:
                 continue
             ident = el.attrs.get("id")
             types = _types(el)
-            if types & NOTE_CONTAINER_TYPES or types & NOTE_TYPES or (
-                ident in self.notes.targets and el.name not in ("a", "span", "sup")
+            if (
+                types & NOTE_CONTAINER_TYPES
+                or types & NOTE_TYPES
+                or (ident in self.notes.targets and el.name not in ("a", "span", "sup"))
             ):
                 self._mark(el, R_NOTE_BODY)
             elif ident in self.notes.targets:  # ancre inline : c'est son bloc qui est la note
@@ -365,8 +367,10 @@ class _Cleaner:
                 target = (a.attrs.get("href") or "").rsplit("#", 1)[-1]
                 node: Tag = a
                 parent = a.parent
-                if isinstance(parent, Tag) and parent.name in ("sup", "sub") and not collapse(
-                    parent.get_text().replace(a.get_text(), "", 1)
+                if (
+                    isinstance(parent, Tag)
+                    and parent.name in ("sup", "sub")
+                    and not collapse(parent.get_text().replace(a.get_text(), "", 1))
                 ):
                     node = parent
                 self._mark(node, R_NOTE_CALL, note=self.notes.bodies.get(target))

@@ -17,6 +17,8 @@ class Engine(ABC):
     is_paid: bool = False
     price_per_million_chars: float = 0.0  # en euros, 0 pour les moteurs gratuits
     max_chars: int | None = None  # longueur maximale d'un appel (None = illimitée)
+    free_chars_per_month: int = 0  # palier gratuit mensuel déclaré (moteurs payants)
+    supports_ipa: bool = False  # accepte une prononciation IPA (SSML <phoneme>)
     default_voice: str = ""
     extra: str | None = None  # nom de l'extra pyproject à installer
     description: str = ""

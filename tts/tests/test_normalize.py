@@ -96,7 +96,10 @@ CASES = [
     # --- mots qui ressemblent à des chiffres romains ---
     ("Le roi dit : Mère, viens.", "Le roi dit: Mère, viens."),
     ("Des cris. Ce soir, Les loups, Me voici", "Des cris. Ce soir, Les loups, Me voici"),
-    ("Vie et mort. Mie de pain. Lie du vin. Ver luisant.", "Vie et mort. Mie de pain. Lie du vin. Ver luisant."),
+    (
+        "Vie et mort. Mie de pain. Lie du vin. Ver luisant.",
+        "Vie et mort. Mie de pain. Lie du vin. Ver luisant.",
+    ),
     ("Dix hommes, Vi, Mi, Di", "Dix hommes, Vi, Mi, Di"),
     ("Il a un CV et un MIX", "Il a un C V et un MIX"),
     ("MI, CI, LI, DI", "MI, CI, LI, DI"),

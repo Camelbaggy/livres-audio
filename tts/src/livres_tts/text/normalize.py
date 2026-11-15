@@ -198,9 +198,7 @@ _ORDINAL_DIGITS = re.compile(
     r"(?<![\w,.])(\d+)(?P<s>ers|ère|ères|er|re|res|ème|èmes|nds|ndes|nd|nde|de|es|e)(?![\w])"
 )
 _TIME = re.compile(r"(?<![\w.,])(\d{1,2})\s?h(?:\s?(\d{2}))?(?![\w])")
-_UNIT = re.compile(
-    r"(?<![\w.,])(?P<n>\d+(?:,\d+)?)\s?(?P<u>km|kg|cm|mm|m|g|€|°C)(?![\w'’])"
-)
+_UNIT = re.compile(r"(?<![\w.,])(?P<n>\d+(?:,\d+)?)\s?(?P<u>km|kg|cm|mm|m|g|€|°C)(?![\w'’])")
 _DECIMAL = re.compile(r"(?<![\w.,])(\d+),(\d+)(?![\w])")
 _INTEGER = re.compile(r"(?<![\w.,])\d+(?![\w])")
 _YEAR_RANGE = re.compile(r"(?<![\w.,])(\d{4})\s?[-–—]\s?(\d{4})(?![\w])")
@@ -331,7 +329,7 @@ def _normalize_line(line: str, options: NormalizeOptions) -> str:
         return "* * *"
     dialogue = re.match(rf"^[{_DASHES}]\s*(?=\S)", line)
     if dialogue:
-        line = "— " + line[dialogue.end():]
+        line = "— " + line[dialogue.end() :]
     for pattern, repl in _ABBREVIATIONS:
         line = pattern.sub(repl, line)
     line = _normalize_romans(line, options)
