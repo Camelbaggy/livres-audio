@@ -16,7 +16,6 @@ from .bench import DEFAULT_BUDGET_MAX, PaidEngineRefused, parse_voices, run_benc
 from .engines import EngineUnavailable, engine_names, get_engine
 
 PENDING = {
-    "prepare": "T1",
     "estimate": "T3",
     "say": "T2",
     "build": "T2",
@@ -59,6 +58,47 @@ def _bench(args: argparse.Namespace) -> int:
     return 1
 
 
+def _prepare(args: argparse.Namespace) -> int:
+    from .epub.extract import DrmError, EpubError
+    from .epub.prepare import PrepareOptions, estimate_cost, prepare
+    from .epub.report import format_duration
+
+    options = PrepareOptions(
+        keep_notes=args.garder_notes,
+        chapter_level=args.niveau_chapitres,
+        remove_dedications=args.retirer_dedicaces,
+    )
+    try:
+        result = prepare(
+            Path(args.livre),
+            Path(args.sortie) if args.sortie else None,
+            options,
+            log=lambda m: print(m, file=sys.stderr),
+        )
+    except DrmError as exc:
+        print(f"Refusé : {exc}", file=sys.stderr)
+        return 2
+    except (EpubError, OSError) as exc:
+        print(f"Erreur : {exc}", file=sys.stderr)
+        return 2
+    for warning in result.warnings:
+        print(f"Attention : {warning}", file=sys.stderr)
+    cost = estimate_cost(result.total_chars)
+    print(f"Projet prêt : {result.project_dir}")
+    chars = f"{result.total_chars:,}".replace(",", " ")
+    print(
+        f"{len(result.chapters)} chapitres, {chars} caractères, "
+        f"durée estimée {format_duration(result.total_seconds)}."
+    )
+    print(
+        f"Coût estimé avec {cost['moteur']} : {cost['cout_sans_palier']:.2f} € au tarif plein "
+        f"({cost['prix_par_million']:.2f} €/M car.) ; {cost['cout_avec_palier']:.2f} € après "
+        f"le palier gratuit mensuel de {cost['palier_gratuit']:,} caractères.".replace(",", " ")
+    )
+    print(f"Rapport à relire : {result.project_dir / 'rapport.html'}")
+    return 0
+
+
 def _engines(_args: argparse.Namespace) -> int:
     for name in engine_names():
         eng = get_engine(name)
@@ -95,6 +135,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     b.add_argument("--graine", type=int, help="graine de l'ordre aléatoire (tests)")
     b.set_defaults(func=_bench)
+
+    pr = sub.add_parser("prepare", help="EPUB sans DRM → projet de travail (texte par chapitre)")
+    pr.add_argument("livre", help="fichier EPUB sans DRM")
+    pr.add_argument("--sortie", help="dossier du projet (défaut : projets/<nom du fichier>)")
+    pr.add_argument("--garder-notes", action="store_true", help="lire les notes en fin de chapitre")
+    pr.add_argument(
+        "--niveau-chapitres",
+        type=int,
+        help="niveau de la table des matières qui donne les chapitres (défaut : automatique)",
+    )
+    pr.add_argument("--retirer-dedicaces", action="store_true", help="ne pas lire les dédicaces")
+    pr.set_defaults(func=_prepare)
 
     e = sub.add_parser("moteurs", help="lister les moteurs et leur disponibilité")
     e.set_defaults(func=_engines)
