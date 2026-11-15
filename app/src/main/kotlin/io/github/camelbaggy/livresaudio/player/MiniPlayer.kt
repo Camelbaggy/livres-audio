@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.camelbaggy.livresaudio.R
 import io.github.camelbaggy.livresaudio.ui.BookCover
 import io.github.camelbaggy.livresaudio.ui.PlayerIcons
+import io.github.camelbaggy.livresaudio.util.formatDuration
 
 /** Persistent mini-player at the bottom of the library, shown while a book is loaded. */
 @Composable
@@ -64,7 +65,12 @@ fun MiniPlayer(viewModel: PlayerViewModel, onOpenPlayer: () -> Unit, modifier: M
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = state.chapterTitle ?: statusLabel(state.status),
+                        // A stream problem takes the place of the chapter title: it must not go unnoticed.
+                        text = if (state.status.isStreamProblem || state.chapterTitle == null) {
+                            statusLabel(state.status, state.availableMs)
+                        } else {
+                            state.chapterTitle.orEmpty()
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -91,15 +97,21 @@ fun MiniPlayer(viewModel: PlayerViewModel, onOpenPlayer: () -> Unit, modifier: M
     }
 }
 
+/** The status text; "En attente du réseau…" carries the audio still available ("… — 12 min disponibles"). */
 @Composable
-internal fun statusLabel(status: PlayerStatus): String = stringResource(
-    when (status) {
-        PlayerStatus.PLAYING -> R.string.player_status_playing
-        PlayerStatus.PAUSED -> R.string.player_status_paused
-        PlayerStatus.LOADING -> R.string.player_status_loading
-        PlayerStatus.WAITING_NETWORK -> R.string.player_status_waiting
-        PlayerStatus.NOT_FOUND -> R.string.player_status_not_found
-        PlayerStatus.ERROR -> R.string.player_status_error
-        PlayerStatus.ENDED -> R.string.player_status_ended
+internal fun statusLabel(status: PlayerStatus, availableMs: Long? = null): String {
+    if (status == PlayerStatus.WAITING_NETWORK && availableMs != null) {
+        return stringResource(R.string.player_status_waiting_available, formatDuration(availableMs))
     }
-)
+    return stringResource(status.labelRes())
+}
+
+private fun PlayerStatus.labelRes(): Int = when (this) {
+    PlayerStatus.PLAYING -> R.string.player_status_playing
+    PlayerStatus.PAUSED -> R.string.player_status_paused
+    PlayerStatus.LOADING -> R.string.player_status_loading
+    PlayerStatus.WAITING_NETWORK -> R.string.player_status_waiting
+    PlayerStatus.NOT_FOUND -> R.string.player_status_not_found
+    PlayerStatus.ERROR -> R.string.player_status_error
+    PlayerStatus.ENDED -> R.string.player_status_ended
+}

@@ -14,6 +14,7 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import io.github.camelbaggy.livresaudio.core.drive.rest.DriveError
@@ -28,9 +29,11 @@ class LibraryScanWorker @AssistedInject constructor(
     private val scanner: LibraryScanner
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        val report = scanner.scan()
+        val mode = if (inputData.getBoolean(KEY_FULL, false)) ScanMode.FULL else ScanMode.AUTO
+        val report = scanner.scan(mode)
         if (report.shouldRetry() && runAttemptCount < MAX_ATTEMPTS) return Result.retry()
-        enqueueProbe()
+        // Nothing listed (no change since the last run): nothing new to probe.
+        if (report.roots.isNotEmpty()) enqueueProbe()
         return Result.success()
     }
 
@@ -55,14 +58,19 @@ class LibraryScanWorker @AssistedInject constructor(
     }
 
     companion object {
+        const val KEY_FULL = "full"
         private const val MAX_ATTEMPTS = 3
     }
 }
 
-/** Scheduling of [LibraryScanWorker]: every 12 h, plus on demand. Both are unique and use `KEEP`. */
+/**
+ * Scheduling of [LibraryScanWorker]: every 12 h, plus on demand. Both are AUTO scans (incremental through
+ * `changes.list`; each root is still listed in full at least weekly). [requestFullScanNow] forces a full walk.
+ */
 object LibraryScanScheduling {
     const val PERIODIC_NAME = "library-scan-periodic"
     const val NOW_NAME = "library-scan-now"
+    const val FULL_NAME = "library-scan-full"
     const val PERIOD_HOURS = 12L
 
     private val connected = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
@@ -81,6 +89,15 @@ object LibraryScanScheduling {
     /** Call once at start-up: `KEEP` leaves an existing schedule alone. */
     fun schedulePeriodic(workManager: WorkManager) {
         workManager.enqueueUniquePeriodicWork(PERIODIC_NAME, ExistingPeriodicWorkPolicy.KEEP, periodicRequest())
+    }
+
+    /** Full control walk on demand (diagnostics). Unique, `KEEP`. */
+    fun requestFullScanNow(workManager: WorkManager) {
+        val request = OneTimeWorkRequestBuilder<LibraryScanWorker>()
+            .setConstraints(connected)
+            .setInputData(workDataOf(LibraryScanWorker.KEY_FULL to true))
+            .build()
+        workManager.enqueueUniqueWork(FULL_NAME, ExistingWorkPolicy.KEEP, request)
     }
 
     /** App opening, pull-to-refresh. `KEEP`: a request already queued or running is not replaced. */

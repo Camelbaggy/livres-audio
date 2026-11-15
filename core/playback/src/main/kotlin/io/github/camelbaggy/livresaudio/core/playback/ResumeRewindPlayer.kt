@@ -32,6 +32,9 @@ class PauseTracker(private val clock: () -> Long) {
         if (pausedAtMs == null || !keepEarliest) pausedAtMs = clock()
     }
 
+    /** Playback was interrupted by a failure while the user wanted to play (network error): counts as a pause. */
+    fun onInterrupted() = onSuppressed(true)
+
     fun onSuppressed(suppressed: Boolean) {
         if (!suppressed) return
         if (pausedAtMs == null || !keepEarliest) pausedAtMs = clock()
@@ -92,14 +95,31 @@ class ResumeRewindPlayer(
         player.removeListener(playerListener)
     }
 
+    /**
+     * A player error (network cut) interrupted playback while the user wanted to play: from now on the outage
+     * counts as a pause, so the resume (automatic or by hand) rewinds according to the table, once.
+     */
+    fun markInterrupted() {
+        tracker.onInterrupted()
+    }
+
     override fun play() {
         rewindNow()
+        retryIfFailed()
         super.play()
     }
 
     override fun setPlayWhenReady(playWhenReady: Boolean) {
-        if (playWhenReady) rewindNow()
+        if (playWhenReady) {
+            rewindNow()
+            retryIfFailed()
+        }
         super.setPlayWhenReady(playWhenReady)
+    }
+
+    /** A player in error sits idle: playing again needs a `prepare()` (it resumes at the position of the error). */
+    private fun retryIfFailed() {
+        if (player.playerError != null && player.playbackState == Player.STATE_IDLE) player.prepare()
     }
 
     /** Applies the rewind due for the pause being ended, once. */

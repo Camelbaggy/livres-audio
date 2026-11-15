@@ -28,7 +28,8 @@ data class DriveFile(
     val parents: List<String>? = null,
     val md5Checksum: String? = null,
     val size: String? = null,
-    val lastModifyingUser: DriveUser? = null
+    val lastModifyingUser: DriveUser? = null,
+    val trashed: Boolean? = null
 )
 
 @Serializable
@@ -37,3 +38,21 @@ data class DriveFileList(val files: List<DriveFile> = emptyList(), val nextPageT
 /** Metadata sent when creating a file or folder. */
 @Serializable
 data class DriveFileMetadata(val name: String, val mimeType: String? = null, val parents: List<String>? = null)
+
+@Serializable
+data class StartPageToken(val startPageToken: String)
+
+/** One entry of `changes.list`. [file] is absent when [removed] (deleted for good or access lost). */
+@Serializable
+data class DriveChange(val fileId: String? = null, val removed: Boolean? = null, val file: DriveFile? = null)
+
+/** A page of `changes.list`: [nextPageToken] while more pages follow, [newStartPageToken] on the last one. */
+@Serializable
+data class DriveChangeList(
+    val changes: List<DriveChange> = emptyList(),
+    val nextPageToken: String? = null,
+    val newStartPageToken: String? = null
+)
+
+/** All changes since a token, and the token to store once they have been applied. */
+data class DriveChangeSet(val changes: List<DriveChange>, val newStartPageToken: String)

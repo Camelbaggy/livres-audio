@@ -16,6 +16,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.camelbaggy.livresaudio.core.playback.ActiveBookHolder
 import io.github.camelbaggy.livresaudio.core.playback.LivresAudioPlaybackService
 import io.github.camelbaggy.livresaudio.core.playback.NetworkMonitor
+import io.github.camelbaggy.livresaudio.core.playback.StreamHealthHolder
 import io.github.camelbaggy.livresaudio.core.playback.describePlaybackError
 import io.github.camelbaggy.livresaudio.core.playback.sendClearSpeedOverride
 import io.github.camelbaggy.livresaudio.core.playback.sendSetSpeed
@@ -43,7 +44,8 @@ import kotlinx.coroutines.launch
 class MediaControllerHolder @Inject constructor(
     @ApplicationContext private val context: Context,
     private val activeBookHolder: ActiveBookHolder,
-    private val network: NetworkMonitor
+    private val network: NetworkMonitor,
+    private val streamHealth: StreamHealthHolder
 ) : PlaybackGateway,
     PlaybackCommands {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -55,6 +57,7 @@ class MediaControllerHolder @Inject constructor(
     private val pending = mutableListOf<(MediaController) -> Unit>()
     private var pollJob: Job? = null
     private var networkJob: Job? = null
+    private var healthJob: Job? = null
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) = publish()
@@ -82,11 +85,23 @@ class MediaControllerHolder @Inject constructor(
         }, ContextCompat.getMainExecutor(context))
         networkJob =
             scope.launch { network.online.collect { online -> mutableState.update { it.copy(online = online) } } }
+        healthJob = scope.launch {
+            streamHealth.health.collect { health ->
+                mutableState.update {
+                    it.copy(
+                        waitingForNetwork = health.waitingForNetwork,
+                        notFound = health.notFound,
+                        availableMs = health.availableMs
+                    )
+                }
+            }
+        }
     }
 
     fun release() {
         pollJob?.cancel()
         networkJob?.cancel()
+        healthJob?.cancel()
         pending.clear()
         controller?.removeListener(listener)
         future?.let { MediaController.releaseFuture(it) }

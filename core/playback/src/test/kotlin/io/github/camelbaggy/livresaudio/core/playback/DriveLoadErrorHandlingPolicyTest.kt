@@ -11,6 +11,7 @@ import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy.LoadErrorInfo
 import io.github.camelbaggy.livresaudio.core.drive.rest.AuthFailedException
 import io.github.camelbaggy.livresaudio.core.model.AuthResult
 import java.io.IOException
+import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import kotlin.test.Test
@@ -75,10 +76,58 @@ class DriveLoadErrorHandlingPolicyTest {
     fun serverErrorsAreRetried() {
         assertEquals(1_000L, policy.getRetryDelayMsFor(info(http(503), 1)))
     }
+
+    private val open = HttpDataSource.HttpDataSourceException.TYPE_OPEN
+
+    private fun httpException(cause: IOException) =
+        HttpDataSource.HttpDataSourceException.createForIOException(cause, dataSpec, open)
+
+    /** Every way the network can fail is retried forever, 1 s growing to 8 s, never given up. */
+    @Test
+    fun everyKindOfNetworkFailureWaitsInsteadOfFailing() {
+        val failures = mapOf(
+            "unknown host" to UnknownHostException(),
+            "timeout" to SocketTimeoutException(),
+            "connection refused" to ConnectException(),
+            "connection reset" to java.net.SocketException("Connection reset"),
+            "http exception without a code (host)" to httpException(UnknownHostException()),
+            "http exception without a code (connect)" to httpException(ConnectException()),
+            "http exception without a code (timeout)" to httpException(SocketTimeoutException()),
+            "no network, token unobtainable" to AuthFailedException(AuthResult.NetworkUnavailable),
+            "server busy" to http(503),
+            "server error" to http(500),
+            "throttled" to http(429),
+            "request timeout" to http(408)
+        )
+        val expected = mapOf(1 to 1_000L, 2 to 2_000L, 3 to 4_000L, 4 to 8_000L, 5 to 8_000L, 100_000 to 8_000L)
+        failures.forEach { (name, error) ->
+            expected.forEach { (count, delay) ->
+                assertEquals(delay, policy.getRetryDelayMsFor(info(error, count)), "$name, errorCount=$count")
+            }
+        }
+    }
+
+    /** 404 is final; 401 reaches the policy only after the Authenticator's single renewal failed: nothing to retry. */
+    @Test
+    fun finalFailuresStopTheLoader() {
+        listOf(401, 403, 404, 410, 416).forEach { code ->
+            assertEquals(C.TIME_UNSET, policy.getRetryDelayMsFor(info(http(code), 1)), "HTTP $code")
+        }
+        assertEquals(C.TIME_UNSET, policy.getRetryDelayMsFor(info(AuthFailedException(AuthResult.NeedsUserAction), 1)))
+    }
+
+    @Test
+    fun everyFailureIsReportedToTheSignal() {
+        val seen = mutableListOf<LoadFailure>()
+        val reporting = DriveLoadErrorHandlingPolicy { seen += it }
+        reporting.getRetryDelayMsFor(info(SocketTimeoutException(), 1))
+        reporting.getRetryDelayMsFor(info(http(404), 1))
+        assertEquals(listOf(LoadFailure.Network, LoadFailure.Http(404)), seen)
+    }
 }
 
 @Suppress("DiscouragedPrivateApi")
-private fun blankDataSpec(): DataSpec {
+internal fun blankDataSpec(): DataSpec {
     val field = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe").apply { isAccessible = true }
     val unsafe = field.get(null) as sun.misc.Unsafe
     return unsafe.allocateInstance(DataSpec::class.java) as DataSpec

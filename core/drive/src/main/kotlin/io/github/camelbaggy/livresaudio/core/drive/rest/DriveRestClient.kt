@@ -18,7 +18,11 @@ private const val FILE_FIELDS =
     "id,name,mimeType,modifiedTime,parents,md5Checksum,size,lastModifyingUser(displayName,emailAddress)"
 private const val LIST_FIELDS = "nextPageToken,files($FILE_FIELDS)"
 private const val ABOUT_FIELDS = "user(emailAddress,displayName)"
+private const val CHANGE_FIELDS =
+    "nextPageToken,newStartPageToken,changes(fileId,removed,file(id,name,mimeType,parents,trashed))"
 private const val MAX_PAGES = 50
+private const val CHANGES_PAGE_SIZE = 1000
+private const val MAX_CHANGE_PAGES = 100
 
 /** `multipart/related` body expected by Drive's `uploadType=multipart`: metadata part, then content part. */
 fun buildMultipartRelated(metadataJson: String, content: String, contentMimeType: String): MultipartBody =
@@ -65,6 +69,64 @@ class DriveRestClient(private val api: DriveApi) {
             }
         }
         return DriveResult.Success(all)
+    }
+
+    /** Token marking "now": changes made after it are returned by [listChanges]. Get it BEFORE a full walk. */
+    suspend fun getStartPageToken(accountId: AccountId): DriveResult<String> =
+        when (val r = call { api.getStartPageToken(AccountTag(accountId)) }) {
+            is DriveResult.Failure -> r
+            is DriveResult.Success -> DriveResult.Success(r.value.startPageToken)
+        }
+
+    /** One page of changes. A rejected token (400/404/410) is reported as [DriveError.InvalidChangeToken]. */
+    suspend fun listChanges(accountId: AccountId, pageToken: String): DriveResult<DriveChangeList> = when (
+        val r = call {
+            api.listChanges(pageToken, CHANGE_FIELDS, CHANGES_PAGE_SIZE, true, AccountTag(accountId))
+        }
+    ) {
+        is DriveResult.Success -> r
+
+        is DriveResult.Failure -> when (val e = r.error) {
+            is DriveError.NotFound -> DriveResult.Failure(DriveError.InvalidChangeToken(e.message))
+
+            is DriveError.Http -> if (e.code == 400 || e.code == 410) {
+                DriveResult.Failure(DriveError.InvalidChangeToken(e.message))
+            } else {
+                r
+            }
+
+            else -> r
+        }
+    }
+
+    /**
+     * Follows `nextPageToken` until `newStartPageToken` (the token to store once the changes are applied).
+     * More than [maxPages] pages is reported as [DriveError.InvalidChangeToken]: the caller does a full walk.
+     */
+    suspend fun listAllChanges(
+        accountId: AccountId,
+        startToken: String,
+        maxPages: Int = MAX_CHANGE_PAGES
+    ): DriveResult<DriveChangeSet> {
+        val all = mutableListOf<DriveChange>()
+        var token = startToken
+        repeat(maxPages) {
+            when (val page = listChanges(accountId, token)) {
+                is DriveResult.Failure -> return page
+
+                is DriveResult.Success -> {
+                    all += page.value.changes
+                    val next = page.value.nextPageToken
+                    if (next == null) {
+                        val fresh = page.value.newStartPageToken
+                            ?: return DriveResult.Failure(DriveError.Unexpected("newStartPageToken absent"))
+                        return DriveResult.Success(DriveChangeSet(all, fresh))
+                    }
+                    token = next
+                }
+            }
+        }
+        return DriveResult.Failure(DriveError.InvalidChangeToken("plus de $maxPages pages de changements"))
     }
 
     suspend fun getFile(accountId: AccountId, fileId: String): DriveResult<DriveFile> =

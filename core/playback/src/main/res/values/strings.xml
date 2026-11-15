@@ -2,4 +2,7 @@
 <resources>
     <string name="playback_library_root">Livres audio</string>
     <string name="playback_in_progress">En cours</string>
+    <string name="playback_status_waiting">En attente du réseau…</string>
+    <string name="playback_status_waiting_available">En attente du réseau… — %1$s disponibles</string>
+    <string name="playback_status_not_found">Fichier introuvable</string>
 </resources>

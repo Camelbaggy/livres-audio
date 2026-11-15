@@ -15,14 +15,18 @@ import dagger.hilt.components.SingletonComponent
 import io.github.camelbaggy.livresaudio.core.data.db.LIBRARY_MIGRATIONS
 import io.github.camelbaggy.livresaudio.core.data.db.LibraryDatabase
 import io.github.camelbaggy.livresaudio.core.data.repo.AccountRepository
+import io.github.camelbaggy.livresaudio.core.data.repo.BookRootLookup
 import io.github.camelbaggy.livresaudio.core.data.repo.BookmarkRepository
 import io.github.camelbaggy.livresaudio.core.data.repo.DataIoDispatcher
 import io.github.camelbaggy.livresaudio.core.data.repo.LibraryRepository
 import io.github.camelbaggy.livresaudio.core.data.repo.ProgressRepository
 import io.github.camelbaggy.livresaudio.core.data.repo.RoomAccountRepository
+import io.github.camelbaggy.livresaudio.core.data.repo.RoomBookRootLookup
 import io.github.camelbaggy.livresaudio.core.data.repo.RoomBookmarkRepository
 import io.github.camelbaggy.livresaudio.core.data.repo.RoomLibraryRepository
 import io.github.camelbaggy.livresaudio.core.data.repo.RoomProgressRepository
+import io.github.camelbaggy.livresaudio.core.data.repo.RoomSyncStateRepository
+import io.github.camelbaggy.livresaudio.core.data.repo.SyncStateRepository
 import io.github.camelbaggy.livresaudio.core.data.settings.DataStoreListeningSettingsStore
 import io.github.camelbaggy.livresaudio.core.data.settings.ListeningSettingsDataStore
 import io.github.camelbaggy.livresaudio.core.model.ListeningSettingsStore
@@ -38,6 +42,12 @@ abstract class DataBindingsModule {
 
     @Binds
     abstract fun library(impl: RoomLibraryRepository): LibraryRepository
+
+    @Binds
+    abstract fun syncState(impl: RoomSyncStateRepository): SyncStateRepository
+
+    @Binds
+    abstract fun bookRoots(impl: RoomBookRootLookup): BookRootLookup
 
     @Binds
     abstract fun progress(impl: RoomProgressRepository): ProgressRepository

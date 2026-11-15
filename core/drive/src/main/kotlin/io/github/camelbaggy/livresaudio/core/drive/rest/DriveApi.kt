@@ -53,6 +53,18 @@ interface DriveApi {
         @Tag tag: AccountTag
     ): Response<DriveFile>
 
+    @GET("changes/startPageToken")
+    suspend fun getStartPageToken(@Tag tag: AccountTag): Response<StartPageToken>
+
+    @GET("changes")
+    suspend fun listChanges(
+        @Query("pageToken") pageToken: String,
+        @Query("fields") fields: String,
+        @Query("pageSize") pageSize: Int,
+        @Query("includeRemoved") includeRemoved: Boolean,
+        @Tag tag: AccountTag
+    ): Response<DriveChangeList>
+
     @Streaming
     @GET("files/{id}")
     suspend fun download(
