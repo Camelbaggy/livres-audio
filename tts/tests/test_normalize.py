@@ -9,7 +9,7 @@ CASES = [
     # --- nombres ---
     ("Il y avait 3 chevaux.", "Il y avait trois chevaux."),
     ("En 1572, le roi.", "En mille cinq cent soixante-douze, le roi."),
-    ("l'an 1000", "l'an mille"),
+    ("l'an 1000", "l’an mille"),
     ("2024", "deux mille vingt-quatre"),
     ("Ils étaient 200.", "Ils étaient deux cents."),
     ("Ils étaient 280 hommes", "Ils étaient deux cent quatre-vingts hommes"),
@@ -28,7 +28,7 @@ CASES = [
     ("1,5 €", "un virgule cinq euro"),
     ("5 km", "cinq kilomètres"),
     ("1 kg", "un kilogramme"),
-    ("10 m'a dit", "dix m'a dit"),
+    ("10 m'a dit", "dix m’a dit"),
     ("20 °C", "vingt degrés Celsius"),
     ("½ litre", "un demi litre"),
     # --- ordinaux en chiffres ---
@@ -126,7 +126,7 @@ CASES = [
     ("p. ex. ainsi", "par exemple ainsi"),
     ("p.ex. ainsi", "par exemple ainsi"),
     ("cf. plus haut", "voir plus haut"),
-    ("c.-à-d. ceci", "c'est-à-dire ceci"),
+    ("c.-à-d. ceci", "c’est-à-dire ceci"),
     ("des fruits, etc. Puis il partit.", "des fruits, et cetera. Puis il partit."),
     ("des fruits, etc.", "des fruits, et cetera."),
     ("des fruits, etc., et du vin", "des fruits, et cetera, et du vin"),
@@ -135,7 +135,7 @@ CASES = [
     ("pain & vin", "pain et vin"),
     # --- sigles ---
     ("la SNCF et le TGV", "la S N C F et le T G V"),
-    ("l'ONU", "l'onu"),
+    ("l'ONU", "l’onu"),
     ("la NASA", "la NASA"),
     # --- guillemets, tirets, ponctuation ---
     ("« Bonjour », dit-il.", "« Bonjour », dit-il."),
@@ -144,7 +144,8 @@ CASES = [
     ("“Bonjour”", "« Bonjour »"),
     ('"Bonjour" dit-il', "« Bonjour » dit-il"),
     ('Un seul " guillemet', 'Un seul " guillemet'),
-    ("l’épée", "l'épée"),
+    ("l’épée", "l’épée"),
+    ("l'épée", "l’épée"),
     ("- Bonjour, dit-il.", "— Bonjour, dit-il."),
     ("–Bonjour", "— Bonjour"),
     ("— Bonjour", "— Bonjour"),

@@ -340,7 +340,15 @@ def _normalize_line(line: str, options: NormalizeOptions) -> str:
     return _normalize_punctuation(line)
 
 
+# Apostrophe de sortie : typographique (U+2019). Google Chirp 3 HD épelle la lettre isolée
+# devant une apostrophe droite (« n'a » → « N … a ») ; elle lit correctement « n’a »
+# (écoute de l'utilisateur, 2026-11-15). Le traitement interne reste fait avec l'apostrophe droite.
+OUTPUT_APOSTROPHE = "\u2019"
+_ELISION = re.compile(rf"(?<=[{_LETTER}])'(?=[{_LETTER}])")
+
+
 def normalize(text: str, options: NormalizeOptions | None = None) -> str:
     """Normalise un texte (une ou plusieurs lignes). Idempotente."""
     opts = options or _DEFAULT
-    return "\n".join(_normalize_line(line, opts) for line in text.replace("\r", "").split("\n"))
+    lines = (_normalize_line(line, opts) for line in text.replace("\r", "").split("\n"))
+    return "\n".join(_ELISION.sub(OUTPUT_APOSTROPHE, line) for line in lines)

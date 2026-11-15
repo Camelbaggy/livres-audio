@@ -77,7 +77,7 @@ def test_prepare_keep_notes_reads_notes_at_chapter_end(full_epub, tmp_path):
     notes = [line for line in lines if line.startswith("Note ")]
     assert notes == [
         "Note un: Mespech: domaine imaginaire de ce récit.",
-        "Note deux: Hortense: prénom d'une servante inventée.",
+        "Note deux: Hortense: prénom d’une servante inventée.",
     ]
     assert lines[-2:] == notes
 
